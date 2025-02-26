@@ -1,0 +1,70 @@
+Sure! Let's dive into writing a Python script to calculate the parsimony phylogenetic tree for the sequences provided, following the Fitch algorithm steps you outlined.
+Here's the complete Python code to achieve this:
+python
+from itertools import combinations
+from copy import deepcopy
+
+sequences = {
+    'H': 'TTAGCTACT',
+    'C': 'CTAGCTCCC',
+    'G': 'CTGGCCACT',
+    'O': 'CTGGACCCT'
+}
+
+def initialize_leaf_nodes(sequences):
+    leaf_nodes = {}
+    for key, sequence in sequences.items():
+        leaf_nodes[key] = [{nucleotide} for nucleotide in sequence]
+    return leaf_nodes
+
+def calculate_internal_node_states(node1, node2):
+    internal_node_state = []
+    for state1, state2 in zip(node1, node2):
+        intersection = state1 & state2
+        if intersection:
+            internal_node_state.append(intersection)
+        else:
+            internal_node_state.append(state1 | state2)
+    return internal_node_state
+
+def calculate_mutation_steps(node1, node2):
+    mutation_steps = 0
+    for state1, state2 in zip(node1, node2):
+        if not (state1 & state2):
+            mutation_steps += 1
+    return mutation_steps
+
+def fitch_algorithm(sequences):
+    nodes = initialize_leaf_nodes(sequences)
+    possible_combinations = list(combinations(sequences.keys(), 2))
+    optimal_tree = None
+    min_mutation_steps = float('inf')
+
+    for combo in possible_combinations:
+        tree = deepcopy(nodes)
+        internal_node = calculate_internal_node_states(tree[combo[0]], tree[combo[1]])
+        tree['root'] = internal_node
+        mutation_steps = calculate_mutation_steps(tree[combo[0]], tree[combo[1]])
+
+        if mutation_steps < min_mutation_steps:
+            min_mutation_steps = mutation_steps
+            optimal_tree = {**tree, 'root': internal_node}
+
+    return optimal_tree, min_mutation_steps
+
+def to_newick_format(tree, root='root'):
+    if root not in tree:
+        return root
+    children = list(tree.keys())[:-1]
+    return f"({to_newick_format(tree, children[0])},{to_newick_format(tree, children[1])}){root}"
+
+optimal_tree, total_mutation_steps = fitch_algorithm(sequences)
+newick_format = to_newick_format(optimal_tree)
+print(f"Optimal Tree in Newick Format: {newick_format}; Total Mutation Steps: {total_mutation_steps}")
+This script performs the following tasks:
+Initializes leaf nodes with their sequences.
+Calculates the internal node states using the Fitch algorithm.
+Computes the mutation steps.
+Finds the optimal tree with the minimum mutation steps.
+Outputs the resulting tree in Newick format.
+You can run this code to get the parsimony phylogenetic tree for your sequences. Let me know if you need further assistance or if there’s anything else you’d like to know!

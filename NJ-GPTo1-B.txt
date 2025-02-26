@@ -1,0 +1,283 @@
+Neighbor‐Joining (NJ) Tree Construction - Step-by-Step
+Step 1: Input Sequences
+makefile
+Copy
+Edit
+seq1 = CGGTTAGCCTATTCTTTCTCACGGGACTTCCCAAAGGTAAGCTTTTCAGG
+seq2 = CGGTTAGCGTGTTCTTGCTCACGGGACCTGCGAAAGGTAAGCCTGTCACG
+seq3 = AACCGTGAAACGACCCCCTCCTCATGCCTAACCAGCGCGAGCGGCCCGCG
+seq4 = AAACATGCATCGTTCCTCCACTCATGGCCAACCAACCAGGGCGTCCCGGA
+seq5 = ATGCGTGCCGAGTCCGACTCCGGGTCACCCGTTCACGTTAACGTCTCCGG
+Step 2: Pairwise Distances
+Pair	#Diff / 50	Distance
+d(seq1, seq2)	8/50	0.16
+d(seq1, seq3)	35/50	0.70
+d(seq1, seq4)	36/50	0.72
+d(seq1, seq5)	27/50	0.54
+d(seq2, seq3)	37/50	0.74
+d(seq2, seq4)	39/50	0.78
+d(seq2, seq5)	30/50	0.60
+d(seq3, seq4)	19/50	0.38
+d(seq3, seq5)	27/50	0.54
+d(seq4, seq5)	33/50	0.66
+Step 3: Initial Distance Matrix (
+𝑟
+=
+5
+r=5)
+markdown
+Copy
+Edit
+        seq1   seq2   seq3   seq4   seq5
+seq1     0     0.16   0.70   0.72   0.54
+seq2    0.16    0     0.74   0.78   0.60
+seq3    0.70   0.74    0     0.38   0.54
+seq4    0.72   0.78   0.38    0     0.66
+seq5    0.54   0.60   0.54   0.66    0
+
+
+First Iteration of Neighbor-Joining
+2.1 Compute the sums of each row
+
+Let S(i) = ∑(k=1 to r) d(i,k).
+
+For the above matrix (where r=5):
+
+S(seq1) = 0.16 + 0.70 + 0.72 + 0.54 = 2.12
+S(seq2) = 0.16 + 0.74 + 0.78 + 0.60 = 2.28
+S(seq3) = 0.70 + 0.74 + 0.38 + 0.54 = 2.36
+S(seq4) = 0.72 + 0.78 + 0.38 + 0.66 = 2.54
+S(seq5) = 0.54 + 0.60 + 0.54 + 0.66 = 2.34
+2.2 Compute the Q-matrix
+
+Recall the NJ formula (with r=5, so r−2=3): Q(i,j) = (r−2) * d(i,j) − S(i) − S(j).
+
+For example: Q(1,2) = 3 * 0.16 − 2.12 − 2.28 = 0.48 − 4.40 = −3.92.
+
+Below are all Q(i,j) (only need to compute the upper or lower triangular part):
+
+Q(1,2) = 3 * 0.16 − 2.12 − 2.28 = −3.92
+Q(1,3) = 3 * 0.70 − 2.12 − 2.36 = −2.38
+Q(1,4) = 3 * 0.72 − 2.12 − 2.54 = −2.50
+Q(1,5) = 3 * 0.54 − 2.12 − 2.34 = −2.84
+Q(2,3) = 3 * 0.74 − 2.28 − 2.36 = −2.42
+Q(2,4) = 3 * 0.78 − 2.28 − 2.54 = −2.48
+Q(2,5) = 3 * 0.60 − 2.28 − 2.34 = −2.82
+Q(3,4) = 3 * 0.38 − 2.36 − 2.54 = −3.76
+Q(3,5) = 3 * 0.54 − 2.36 − 2.34 = −3.08
+Q(4,5) = 3 * 0.66 − 2.54 − 2.34 = −2.90
+
+We look for the most negative (i.e. the minimum) Q(i,j).
+
+The minimum is Q(seq1, seq2) = −3.92. Hence, seq1 and seq2 are chosen as neighbors.
+
+2.3 Join seq1 and seq2
+
+Create a new node (call it u) that joins seq1 and seq2.
+
+2.3.1 Branch lengths to the new node u
+
+The NJ formula for the branch from f to the new node u (with r=5) is: d(f,u) = 0.5 * d(f,g) + 0.5 * (r−2) * [ S(f) − S(g) ]
+
+where f,g is our chosen pair. Take f = seq1, g = seq2.
+
+d(seq1,u) = 0.5 * 0.16 + (1/2 * 3) * (2.12 − 2.28)
+= 0.08 + (1/6) * (−0.16)
+= 0.08 − 0.0266667
+≈ 0.0533
+
+d(seq2,u) = d(seq1,seq2) − d(seq1,u)
+= 0.16 − 0.0533
+≈ 0.1067
+
+2.3.2 Distances from u to the remaining taxa
+
+We now treat (seq1, seq2) as a single “taxon” u. For any other sequence k:
+
+d(u,k) = 0.5 * [ d(seq1,k) − d(seq1,u) ] + 0.5 * [ d(seq2,k) − d(seq2,u) ].
+
+For k = seq3: d(u,3) = 0.5 * (0.70 − 0.0533) + 0.5 * (0.74 − 0.1067)
+= 0.5 * 0.6467 + 0.5 * 0.6333
+≈ 0.3233 + 0.3167
+≈ 0.64
+
+For k = seq4: d(u,4) = 0.5 * (0.72 − 0.0533) + 0.5 * (0.78 − 0.1067)
+= 0.5 * 0.6667 + 0.5 * 0.6733
+≈ 0.33 + 0.3367
+≈ 0.67
+
+For k = seq5: d(u,5) = 0.5 * (0.54 − 0.0533) + 0.5 * (0.60 − 0.1067)
+= 0.5 * 0.4867 + 0.5 * 0.4933
+≈ 0.24 + 0.2467
+≈ 0.49
+
+2.4 Updated distance matrix (4 “taxa”: u, 3, 4, 5)
+
+Let us rename the new cluster as u = (1,2). Distances:
+
+u   3    4    5
+u   0   0.64  0.67  0.49
+3   0.64  0   0.38  0.54
+4   0.67  0.38  0   0.66
+5   0.49  0.54  0.66  0
+
+Second Iteration
+Now r = 4. We compute:
+
+S′(u) = 0.64 + 0.67 + 0.49 = 1.80
+S′(3) = 0.64 + 0.38 + 0.54 = 1.56
+S′(4) = 0.67 + 0.38 + 0.66 = 1.71
+S′(5) = 0.49 + 0.54 + 0.66 = 1.69
+
+For r = 4, we have r − 2 = 2. Then:
+
+Q′(i,j) = 2 * d(i,j) − S′(i) − S′(j).
+
+Compute each pair:
+
+Q′(u,3) = 2 * 0.64 − 1.80 − 1.56 = 1.28 − 3.36 = −2.08
+Q′(u,4) = 2 * 0.67 − 1.80 − 1.71 = 1.34 − 3.51 = −2.17
+Q′(u,5) = 2 * 0.49 − 1.80 − 1.69 = 0.98 − 3.49 = −2.51
+Q′(3,4) = 2 * 0.38 − 1.56 − 1.71 = 0.76 − 3.27 = −2.51
+Q′(3,5) = 2 * 0.54 − 1.56 − 1.69 = 1.08 − 3.25 = −2.17
+Q′(4,5) = 2 * 0.66 − 1.71 − 1.69 = 1.32 − 3.40 = −2.08
+
+The minimum (most negative) is −2.51. There is a tie between (u,5) and (3,4). In practice, one typically picks the first encountered or breaks ties arbitrarily. Let us choose u and seq5 to join next.
+
+3.1 Join u and seq5 → new node w
+
+Branch length d(u,w):
+
+Since r = 4, r − 2 = 2, so the formula is:
+
+d(u,w) = 0.5 * d(u,5) + 0.5 * (r−2) * [ S′(u) − S′(5) ].
+
+We have:
+
+d(u,w) = 0.5 * 0.49 + 0.5 * 2 * (1.80 − 1.69)
+= 0.245 + (1 * 0.11)
+= 0.245 + 0.0275
+= 0.2725
+
+d(5,w) = d(u,5) − d(u,w)
+= 0.49 − 0.2725
+= 0.2175
+
+3.2 Distances from w to (3) and (4)
+
+We have (outside nodes) 3 and 4. Formula:
+
+d(w,k) = 0.5 * [ d(u,k) − d(u,w) ] + 0.5 * [ d(5,k) − d(5,w) ].
+
+For k = 3:
+
+d(w,3) = 0.5 * (0.64 − 0.2725) + 0.5 * (0.54 − 0.2175)
+= 0.5 * 0.3675 + 0.5 * 0.3225
+= 0.18375 + 0.16125
+= 0.345
+
+For k = 4:
+
+d(w,4) = 0.5 * (0.67 − 0.2725) + 0.5 * (0.66 − 0.2175)
+= 0.5 * 0.3975 + 0.5 * 0.4425
+= 0.19875 + 0.22125
+= 0.42
+
+3.3 New matrix (3 “taxa”: w, 3, 4)
+
+Below is the updated distance matrix among w, 3, and 4:
+       w     3      4
+w      0   0.345  0.42
+3    0.345   0    0.38
+4     0.42  0.38    0
+
+Third Iteration
+Now r = 3. Then r − 2 = 1.
+
+S′′(w) = 0.345 + 0.42 = 0.765
+S′′(3) = 0.345 + 0.38 = 0.725
+S′′(4) = 0.42 + 0.38 = 0.80
+
+Compute:
+
+Q′′(w,3) = 1 × 0.345 − 0.765 − 0.725
+= 0.345 − 1.49
+= −1.145
+
+Q′′(w,4) = 1 × 0.42 − 0.765 − 0.80
+= 0.42 − 1.565
+= −1.145
+
+Q′′(3,4) = 1 × 0.38 − 0.725 − 0.80
+= 0.38 − 1.525
+= −1.145
+
+All three are the same (−1.145). We can pick any pair; let us pick (3,4) to join next.
+
+4.1 Join (3,4) → new node x
+
+Branch length d(3,x):
+
+d(3,x) = 0.5 * d(3,4) + 0.5 * (r−2) * [ S′′(3) − S′′(4) ]
+(now r=3 ⇒ r−2=1)
+
+So:
+
+d(3,x) = 0.5 * 0.38 + 0.5 * 1 * (0.725 − 0.80)
+= 0.19 + 0.5 * (−0.075)
+= 0.19 − 0.0375
+= 0.1525
+
+d(4,x) = d(3,4) − d(3,x)
+= 0.38 − 0.1525
+= 0.2275
+
+4.2 Distance from x to w
+
+d(x,w) = 0.5 * [ d(3,w) − d(3,x) ] + 0.5 * [ d(4,w) − d(4,x) ]
+
+We have d(3,w) = 0.345 and d(4,w) = 0.42 from the matrix above.
+
+d(x,w) = 0.5 * (0.345 − 0.1525) + 0.5 * (0.42 − 0.2275)
+= 0.5 * 0.1925 + 0.5 * 0.1925
+= 0.09625 + 0.09625
+= 0.1925
+
+Final Join
+Now only two “taxa” remain: w and x. Their distance is 0.1925. By the usual final-step simplification in NJ, each gets half that distance up to the final root:
+
+d(w,y) = 0.09625
+d(x,y) = 0.09625
+
+where y is the (implicit) last joining node.
+
+Reconstructing the Tree (Newick)
+We have the following merges:
+
+u = (seq1, seq2)
+d(seq1,u) = 0.0533
+d(seq2,u) = 0.1067
+
+w = (u, seq5)
+d(u,w) = 0.2725
+d(seq5,w) = 0.2175
+
+x = (seq3, seq4)
+d(seq3,x) = 0.1525
+d(seq4,x) = 0.2275
+
+Final join: y = (w, x)
+d(w,y) = 0.09625
+d(x,y) = 0.09625
+
+Hence, in Newick form (one possible layout) is:
+
+( ( (seq1:0.0533,seq2:0.1067):0.2725, seq5:0.2175 ):0.09625, (seq3:0.1525,seq4:0.2275):0.09625 );
+
+You can rename the internal nodes if you wish, but the essential structure and branch lengths are shown.
+
+Note: Because of the tie in the second iteration (Q′(u,5) = Q′(3,4)), you might see slightly different topologies or branch-length distributions depending on how ties get broken. The above is one valid solution following the neighbor-joining formulas literally.
+
+
+
+	

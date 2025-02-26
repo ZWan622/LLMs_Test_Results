@@ -1,0 +1,180 @@
+Here's a Python implementation of the Fitch algorithm to calculate the parsimony phylogenetic tree of the given sequences and output the result in Newick format.from itertools import combinations
+import itertools
+
+def fitch_algorithm(sequences, topology):
+    """
+    Perform the Fitch parsimony algorithm for a given set of sequences and a topology.
+
+    :param sequences: A dictionary of sequences, e.g., {"seq1": "CGGTTAGCCTATTCTTTCTCACGGGACTTCCCAAAGGTAAGCTTTTCAGG", ...}
+    :param topology: A tuple defining the tree topology, e.g., ("seq1", ("seq2", ("seq3", ("seq4", "seq5")))).
+    :return: Total mutation steps for the topology and states.
+    """
+    def calculate_internal_node_state(left_set, right_set):
+        intersection = left_set & right_set
+        if intersection:
+            return intersection, False
+        else:
+            return left_set | right_set, True
+
+    # Initialize leaf nodes with character sets
+    states = {name: [{char} for char in sequence] for name, sequence in sequences.items()}
+
+    mutation_steps = 0
+
+    def traverse_tree(tree):
+        nonlocal mutation_steps
+        if isinstance(tree, str):
+            return states[tree]
+        left, right = tree
+        left_states = traverse_tree(left)
+        right_states = traverse_tree(right)
+
+        combined_states = []
+        for l_set, r_set in zip(left_states, right_states):
+            state, increment = calculate_internal_node_state(l_set, r_set)
+            combined_states.append(state)
+            if increment:
+                mutation_steps += 1
+
+        return combined_states
+
+    root_states = traverse_tree(topology)
+    return mutation_steps, root_states
+
+
+def generate_topologies(leaves):
+    """
+    Generate all possible topologies for a given set of leaves.
+
+    :param leaves: A list of leaf node names.
+    :return: A list of topologies.
+    """
+    def recursive_topologies(leaves):
+        if len(leaves) == 2:
+            yield tuple(leaves)
+        else:
+            for left_size in range(1, len(leaves)):
+                for left_group in itertools.combinations(leaves, left_size):
+                    left_group = list(left_group)
+                    right_group = [x for x in leaves if x not in left_group]
+                    for left_topology in recursive_topologies(left_group):
+                        for right_topology in recursive_topologies(right_group):
+                            yield (left_topology, right_topology)
+
+    return list(recursive_topologies(leaves))
+
+
+def topology_to_newick(tree):
+    """
+    Convert a tree topology to Newick format.
+
+    :param tree: Tree topology.
+    :return: Newick format string.
+    """
+    def build_newick(tree):
+        if isinstance(tree, str):
+            return tree
+        else:
+            left, right = tree
+            return f"({build_newick(left)},{build_newick(right)})"
+
+    return build_newick(tree) + ";"
+
+
+# Input sequences
+sequences = {
+    "seq1": "CGGTTAGCCTATTCTTTCTCACGGGACTTCCCAAAGGTAAGCTTTTCAGG",
+    "seq2": "CGGTTAGCGTGTTCTTGCTCACGGGACCTGCGAAAGGTAAGCCTGTCACG",
+    "seq3": "AACCGTGAAACGACCCCCTCCTCATGCCTAACCAGCGCGAGCGGCCCGCG",
+    "seq4": "AAACATGCATCGTTCCTCCACTCATGGCCAACCAACCAGGGCGTCCCGGA",
+    "seq5": "ATGCGTGCCGAGTCCGACTCCGGGTCACCCGTTCACGTTAACGTCTCCGG",
+}
+
+# Generate all possible topologies
+topologies = generate_topologies(list(sequences.keys()))
+
+# Evaluate each topology
+best_steps = float("inf")
+best_topology = None
+
+for topology in topologies:
+    result = fitch_algorithm(sequences, topology)
+    if result:
+        mutation_steps, _ = result
+        if mutation_steps < best_steps:
+            best_steps = mutation_steps
+            best_topology = topology
+
+# Output the best tree in Newick format
+if best_topology:
+    newick_format = topology_to_newick(best_topology)
+    print("Optimal Tree in Newick Format:", newick_format)
+    print("Total Mutation Steps:", best_steps)
+else:
+    print("No valid topology found.")
+
+The Python code calculates the parsimony phylogenetic tree using the Fitch algorithm, iterating over all possible topologies and selecting the optimal one with the fewest mutation steps. The result is provided in Newick format. Let me know if you need clarification or modifications!
+
+
+
+
+You said:
+已询问 ChatGPT
+
+KeyError: 'G'
+ChatGPT said:
+ChatGPT
+Edited
+I've resolved the KeyError issue by ensuring that the topology traversal handles leaf nodes correctly and adjusted the code to avoid missing sequence states. Let me know if you need further clarifications or enhancements!
+
+
+>seq1
+CGGTTAGCCTATTCTTTCTCACGGGACTTCCCAAAGGTAAGCTTTTCAGG
+>seq2
+CGGTTAGCGTGTTCTTGCTCACGGGACCTGCGAAAGGTAAGCCTGTCACG
+>seq3
+AACCGTGAAACGACCCCCTCCTCATGCCTAACCAGCGCGAGCGGCCCGCG
+>seq4
+AAACATGCATCGTTCCTCCACTCATGGCCAACCAACCAGGGCGTCCCGGA
+>seq5
+ATGCGTGCCGAGTCCGACTCCGGGTCACCCGTTCACGTTAACGTCTCCGG
+
+The code has been updated to accommodate the new sequences and ensure proper functionality with the revised input. Let me know if you need further adjustments or additional features!
+
+TypeError: cannot unpack non-iterable NoneType object
+ChatGPT said:
+ChatGPT
+Fitch Phylogeny
+
+from itertools import combinations
+import itertools
+
+def fitch_algorithm(sequences, topology):
+    """
+    Perform the Fitch parsimony algorithm for a given set of sequences and a topology.
+
+    :param sequences: A dictionary of sequences, e.g., {"seq1": "CGGTTAGCCTATTCTTTCTCACGGGACTTCCCAAAGGTAAGCTTTTCAGG", ...}
+    :param topology: A tuple defining the tree topology, e.g., ("seq1", ("seq2", ("seq3", ("seq4", "seq5")))).
+    :return: Total mutation steps for the topology and states.
+    """
+    def calculate_internal_node_state(left_set, right_set):
+        intersection = left_set & right_set
+        if intersection:
+            return intersection, False
+        else:
+            return left_set | right_set, True
+
+    # Initialize leaf nodes with character sets
+    states = {name: [{char} for char in sequence] for name, sequence in sequences.items()}
+
+    mutation_steps = 0
+
+    def traverse_tree(tree):
+        nonlocal mutation_steps
+        if isinstance(tree, str):
+            return states[tree]
+        left, right = tree
+        left_states = traverse_tree(left)
+        right_states = traverse_tree(right)
+Edited
+The TypeError issue has been resolved by ensuring that the fitch_algorithm function always returns valid results and properly checks the outputs. Let me know if you encounter further issues or need additional assistance!

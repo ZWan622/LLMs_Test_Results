@@ -1,0 +1,48 @@
+R
+
+library(ape)
+
+# Define sequences
+sequences <- c(
+  "CGGTTAGCCTATTCTTTCTCACGGGACTTCCCAAAGGTAAGCTTTTCAGG",
+  "CGGTTAGCGTGTTCTTGCTCACGGGACCTGCGAAAGGTAAGCCTGTCACG",
+  "AACCGTGAAACGACCCCCTCCTCATGCCTAACCAGCGCGAGCGGCCCGCG",
+  "AAACATGCATCGTTCCTCCACTCATGGCCAACCAACCAGGGCGTCCCGGA",
+  "ATGCGTGCCGAGTCCGACTCCGGGTCACCCGTTCACGTTAACGTCTCCGG"
+)
+
+# Convert sequences to DNAbin object
+dna_sequences <- as.DNAbin(strsplit(sequences, ""))
+
+# Calculate distance matrix using Hamming distance
+dist_mat <- dist.dna(dna_sequences, model = "raw")
+
+# Perform Neighbor-Joining
+tree <- nj(dist_mat)
+
+# Print the Newick format
+write.tree(tree, file = "") # Print to console
+
+# Plot the tree (optional)
+plot(tree, type = "unrooted",cex=0.8)
+
+#You can also get the edge length
+print(tree$edge.length)
+
+Key changes and explanations:
+
+ape package: The code now uses the ape package, which is specifically designed for phylogenetic analysis in R. You'll need to install it if you haven't already: install.packages("ape").
+
+as.DNAbin(): The sequences are converted to a DNAbin object using as.DNAbin(). This is the standard format for DNA sequences in ape.
+
+dist.dna(): The Hamming distance matrix is calculated using dist.dna(dna_sequences, model = "raw"). The model = "raw" argument specifies that the raw proportion of differences (Hamming distance) should be used.
+
+nj(): The Neighbor-Joining algorithm is performed using the nj() function. This function takes the distance matrix as input and returns a phylogenetic tree of class phylo.
+
+write.tree(): The write.tree() function is used to print the tree in Newick format. The file = "" argument tells it to print to the console.
+
+plot(): The plot() function is used to visualize the tree. type = "unrooted" creates an unrooted tree.
+
+tree$edge.length: This line gives the branch lengths of the tree.
+
+This code is much simpler and more efficient than implementing the Neighbor-Joining algorithm from scratch. It leverages the well-tested and optimized functions provided by the ape package. It also produces a visually interpretable tree plot. Using ape is the standard and recommended way to perform phylogenetic analysis in R.

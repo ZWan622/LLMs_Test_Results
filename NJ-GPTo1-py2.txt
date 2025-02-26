@@ -1,0 +1,813 @@
+Now I have these sequnces
+>seq1
+CGGTTAGCCTATTCTTTCTCACGGGACTTCCCAAAGGTAAGCTTTTCAGG
+>seq2
+CGGTTAGCGTGTTCTTGCTCACGGGACCTGCGAAAGGTAAGCCTGTCACG
+>seq3
+AACCGTGAAACGACCCCCTCCTCATGCCTAACCAGCGCGAGCGGCCCGCG
+>seq4
+AAACATGCATCGTTCCTCCACTCATGGCCAACCAACCAGGGCGTCCCGGA
+>seq5
+ATGCGTGCCGAGTCCGACTCCGGGTCACCCGTTCACGTTAACGTCTCCGG
+Step1：
+Write a python program that can calculate the hamming distance of each sequence and then generate a distance matrix
+
+Step 2:From the distance matrix, for each tip, compute
+$$u_i = \sum_{j\neq i} D(i,j)/(n - 2)$$
+An average distance to all other tips, although it is over n-2 instead of n-1. Can you generate a python code for this step?
+
+
+ChatGPT
+
+Thought about Hamming distance and distance matrix，持续 16 秒
+Below is an example Python script that accomplishes both steps. Explanations are included as comments within the code.
+
+python
+Copy
+#!/usr/bin/env python3
+
+import numpy as np
+
+# ==========================================
+# Step 1: Hamming Distance & Distance Matrix
+# ==========================================
+
+# Example sequences
+sequences = [
+    "CGGTTAGCCTATTCTTTCTCACGGGACTTCCCAAAGGTAAGCTTTTCAGG",
+    "CGGTTAGCGTGTTCTTGCTCACGGGACCTGCGAAAGGTAAGCCTGTCACG",
+    "AACCGTGAAACGACCCCCTCCTCATGCCTAACCAGCGCGAGCGGCCCGCG",
+    "AAACATGCATCGTTCCTCCACTCATGGCCAACCAACCAGGGCGTCCCGGA",
+    "ATGCGTGCCGAGTCCGACTCCGGGTCACCCGTTCACGTTAACGTCTCCGG"
+]
+
+def hamming_distance(seq1, seq2):
+    """
+    Compute the Hamming distance between two sequences of equal length.
+    """
+    assert len(seq1) == len(seq2), "Sequences must be the same length for Hamming distance."
+    return sum(nt1 != nt2 for nt1, nt2 in zip(seq1, seq2))
+
+# Number of sequences
+n = len(sequences)
+
+# Initialize an n x n distance matrix
+distance_matrix = np.zeros((n, n), dtype=int)
+
+# Fill the distance matrix
+for i in range(n):
+    for j in range(n):
+        distance_matrix[i, j] = hamming_distance(sequences[i], sequences[j])
+
+# Print out the distance matrix (optional)
+print("Distance Matrix:")
+print(distance_matrix, "\n")
+
+
+# =========================================
+# Step 2: Compute u_i for each sequence (tip)
+#        u_i = [sum(D(i,j) for j != i)] / (n - 2)
+# =========================================
+
+u_values = []
+for i in range(n):
+    # Sum of distances from sequence i to all others
+    sum_dist = sum(distance_matrix[i, j] for j in range(n) if j != i)
+    # Divide by (n - 2) as specified
+    u_i = sum_dist / (n - 2)
+    u_values.append(u_i)
+
+# Print out the computed u_i values
+print("u_i values (for i = 1..n):")
+for i, val in enumerate(u_values, start=1):
+    print(f"u_{i} = {val:.3f}")
+How the Code Works
+Hamming Distance:
+
+We define a function hamming_distance(seq1, seq2) that iterates over both sequences in parallel and counts how many nucleotide (character) positions differ.
+Distance Matrix:
+
+We create a square matrix of size n × n, where n is the number of sequences.
+The element at row i, column j (i.e., distance_matrix[i, j]) is the Hamming distance between sequences[i] and sequences[j].
+
+Compute ui:
+
+For each sequence i, we sum the distances D(i, j) for all j ≠ i.
+We then divide this sum by (n - 2) instead of (n - 1), as requested.
+
+Finally, we store and print out each ui value.
+You can adapt this script to your needs (e.g., read sequences from a file, handle different sequence lengths, etc.).
+
+
+
+
+You said:
+Step 3:  DIFF(i, j) = D(i, j) - u_i - u_j (Here D(i, j) represents the distance between nodes i and j in the last distance_matrix, for example, DIFF(A,B) = 10 – 16.5 – 15 = -21.5)
+Here you should calculate the DIFF between each branch, for example when I have three points A, B and C. I then need to calculate DIFF (A, B), DIFF (B, C), DIFF (A, C)
+
+Step 4: 
+Then select the one with the smallest DIFF(i,j) value and
+Connect the tips i and j, forming a new ancestral node with branch lengths to i and j:
+$$v_i = (D(i,j) + u_i - u_j)/2$$
+$$v_j = (D(i,j) + u_j - u_i)/2$$
+
+ChatGPT
+
+Thought about distance matrix and branch formation，持续 25 秒
+Below is a simple Python snippet that demonstrates Steps 3 and 4 of the Neighbor-Joining approach. We assume you have already computed:
+
+The pairwise distance matrix, distance_matrix, using Hamming (or other) distances.
+The array u_values, where 
+𝑢
+𝑖
+=
+∑
+𝑗
+≠
+𝑖
+𝐷
+(
+𝑖
+,
+𝑗
+)
+/
+(
+𝑛
+−
+2
+)
+u 
+i
+​
+ = 
+j
+
+=i
+∑
+​
+ D(i,j)/(n−2).
+python
+Copy
+import numpy as np
+
+# Suppose you already have:
+# distance_matrix : NxN numpy array of distances D(i,j)
+# u_values        : list (or numpy array) of u_i values for i in [0..n-1]
+# n               : number of current 'tips' (sequences or clusters)
+
+# ================
+# Step 3: 
+# Compute DIFF(i, j) = D(i, j) - u_i - u_j for each pair (i, j)
+# ================
+
+n = distance_matrix.shape[0]  # number of current tips/nodes
+
+diff_matrix = np.zeros((n, n), dtype=float)
+for i in range(n):
+    for j in range(n):
+        if i == j:
+            # Set diagonal to something large or NaN so it won't be picked as a minimum
+            diff_matrix[i, j] = float('inf')
+        else:
+            diff_matrix[i, j] = distance_matrix[i, j] - u_values[i] - u_values[j]
+
+# Find the pair (i_star, j_star) with the smallest DIFF
+min_val = float('inf')
+min_pair = (None, None)
+for i in range(n):
+    for j in range(i+1, n):
+        if diff_matrix[i, j] < min_val:
+            min_val = diff_matrix[i, j]
+            min_pair = (i, j)
+
+i_star, j_star = min_pair
+print(f"The smallest DIFF is between tips {i_star} and {j_star} = {min_val:.3f}")
+
+# ================
+# Step 4: 
+# Connect tips i_star and j_star to a new ancestral node
+# Branch lengths:
+#   v_i = (D(i,j) + u_i - u_j) / 2
+#   v_j = (D(i,j) + u_j - u_i) / 2
+# ================
+
+Dij = distance_matrix[i_star, j_star]
+u_i = u_values[i_star]
+u_j = u_values[j_star]
+
+v_i = (Dij + u_i - u_j) / 2.0
+v_j = (Dij + u_j - u_i) / 2.0
+
+print(f"Branch length from the new node to tip {i_star} (v_i): {v_i:.3f}")
+print(f"Branch length from the new node to tip {j_star} (v_j): {v_j:.3f}")
+Explanation
+Construct DIFF(i, j):
+
+We allocate a new matrix, diff_matrix, of the same size as the distance matrix. For each pair (i, j):
+DIFF(i, j) = D(i, j) - ui - uj.
+
+We set the diagonal DIFF(i, i) to infinity (or some large number) so it is never chosen as the minimal value.
+
+Find the pair with the smallest DIFF:
+
+We iterate over all unique pairs (i, j) to locate the pair (i*, j*) with the minimum DIFF(i, j).
+
+Compute the branch lengths for the new ancestral node:
+
+Once we know (i*, j*), we calculate the two branch lengths from the new node to each tip:
+vi = (D(i, j) + ui - uj) / 2
+vj = (D(i, j) + uj - ui) / 2.
+
+This corresponds exactly to the Neighbor-Joining step of picking the pair of nodes that minimizes the corrected distance (DIFF) and joining them under their new ancestor.
+
+Next steps for the full Neighbor-Joining algorithm:
+
+Create a new node u that represents the ancestor of i* and j*.
+Update the distance matrix to reflect the new node in place of i* and j*.
+Recompute uk for each remaining node k.
+Repeat until all nodes form a single tree.
+DIFF(i,j), pick the smallest pair, and compute their branch lengths.
+
+
+
+
+You said:
+Step 5: Update the distance matrix D:
+Replace tips i and j by the new node, and regard it as a tip
+Distance between the new node and another tip k is:
+$$D(\text{{new node}}, k) = (D(i, k) + D(j, k) - D(i,j))/2$$
+When performing this step, it is necessary to ensure that in order to prevent errors associated with updating the matrix, nodes other than i and j are placed into the new matrix when updating the matrix, and so on.
+
+Step6:Repeat steps 1-5 until the calculation is down to only two nodes left. 
+
+ChatGPT
+
+Thought about Neighbor-Joining algorithm steps，持续 一秒
+Below is an example of how you might implement Steps 5 and 6 in a Neighbor-Joining procedure, in continuation of the code from previous steps. The main tasks here are:
+
+Merge the two selected tips (i_star, j_star) into a new node and calculate its distances to the remaining nodes.
+Build a new distance matrix with the newly created node in place of the old ones. (We effectively remove 
+𝑖
+∗
+i 
+∗
+  and 
+𝑗
+∗
+j 
+∗
+  and introduce a new node, so the matrix size shrinks by 1.)
+Repeat until only two nodes remain.
+Putting It All Together
+Below is a more complete Python script that outlines the entire Neighbor-Joining procedure (in a simplified way). For clarity:
+
+Step 1: Compute the distance matrix (already done previously).
+
+Step 2: Compute ui for each tip.
+
+Step 3: Compute DIFF(i, j) = D(i, j) - ui - uj.
+
+Step 4: Find the pair (i*, j*) with minimum DIFF, connect them, and compute branch lengths:
+
+vi = (D(i, j) + ui - uj) / 2
+vj = (D(i, j) + uj - ui) / 2
+Step 5: Update the distance matrix to reflect the new node.
+
+Step 6: Repeat until only two nodes remain.
+Example Code
+python
+Copy
+import numpy as np
+
+def hamming_distance(seq1, seq2):
+    """
+    Compute the Hamming distance between two sequences of equal length.
+    """
+    assert len(seq1) == len(seq2), "Sequences must be the same length for Hamming distance."
+    return sum(nt1 != nt2 for nt1, nt2 in zip(seq1, seq2))
+
+# Step 1: Prepare initial distance matrix
+sequences = [
+    "CGGTTAGCCTATTCTTTCTCACGGGACTTCCCAAAGGTAAGCTTTTCAGG",  # A
+    "CGGTTAGCGTGTTCTTGCTCACGGGACCTGCGAAAGGTAAGCCTGTCACG",  # B
+    "AACCGTGAAACGACCCCCTCCTCATGCCTAACCAGCGCGAGCGGCCCGCG",  # C
+    "AAACATGCATCGTTCCTCCACTCATGGCCAACCAACCAGGGCGTCCCGGA",  # D
+    "ATGCGTGCCGAGTCCGACTCCGGGTCACCCGTTCACGTTAACGTCTCCGG"   # E
+]
+labels = ["A", "B", "C", "D", "E"]  # For bookkeeping
+
+n = len(sequences)
+distance_matrix = np.zeros((n, n))
+
+for i in range(n):
+    for j in range(n):
+        distance_matrix[i, j] = hamming_distance(sequences[i], sequences[j])
+
+# Keep track of active labels (tips). We'll collapse them into new nodes as we go.
+active_labels = labels[:]
+
+def neighbor_joining(distance_matrix, active_labels):
+    """
+    Perform the full Neighbor-Joining algorithm on the given distance_matrix
+    and labels, returning a dictionary describing the tree.
+    """
+    # This dictionary will store the tree structure:
+    #   key: newly created node label
+    #   value: list of tuples (child_label, branch_length)
+    # E.g. new_node['X'] = [('A', 0.1), ('B', 0.2)]
+    new_node = {}
+    
+    while distance_matrix.shape[0] > 2:
+        n = distance_matrix.shape[0]
+        
+        # Step 2: Compute u_i for each tip i
+        u_values = []
+        for i in range(n):
+            # sum of distances from i to all other nodes
+            sum_dist = sum(distance_matrix[i, j] for j in range(n) if j != i)
+            # divide by (n - 2)
+            u_values.append(sum_dist / (n - 2))
+        
+        # Step 3: Construct DIFF(i, j)
+        diff_matrix = np.full((n, n), fill_value=np.inf)
+        for i in range(n):
+            for j in range(i + 1, n):
+                diff_matrix[i, j] = distance_matrix[i, j] - u_values[i] - u_values[j]
+                diff_matrix[j, i] = diff_matrix[i, j]  # symmetric
+        
+        # Step 4: Find the pair (i_star, j_star) with the smallest DIFF
+        i_star, j_star = np.unravel_index(np.argmin(diff_matrix), diff_matrix.shape)
+        D_ij = distance_matrix[i_star, j_star]
+        # Branch lengths
+        v_i = (D_ij + u_values[i_star] - u_values[j_star]) / 2.0
+        v_j = (D_ij + u_values[j_star] - u_values[i_star]) / 2.0
+        
+        # Create a new label for the ancestor node
+        new_label = f"({active_labels[i_star]}-{active_labels[j_star]})"
+        
+        # Store the tree structure:
+        new_node[new_label] = [(active_labels[i_star], v_i),
+                               (active_labels[j_star], v_j)]
+        
+        # Step 5: Update the distance matrix with the new node
+        # Calculate D(new_node, k)
+        
+        # We'll build a new distance matrix with one fewer node.
+        new_n = n - 1
+        new_dist_matrix = np.zeros((new_n, new_n))
+        new_labels = []
+        
+        # The new node will replace the pair (i_star, j_star).
+        # We have to copy over rows/columns for everything except j_star.
+        # i_star becomes the new node's row/col index in the matrix.
+        
+        # Index in the new matrix for the new node
+        new_node_index = 0
+        
+        # Step 5a: Fill new distances for the new node vs. other remaining nodes.
+        # We also need to decide how to index these other nodes in new_dist_matrix.
+        
+        # We'll keep the existing order except skipping j_star,
+        # and replacing i_star with the new node.
+        
+        # Build a map from old indices -> new indices
+        old_to_new = {}
+        idx_counter = 0
+        for old_idx in range(n):
+            if old_idx == j_star:
+                continue  # skip j_star entirely
+            if old_idx == i_star:
+                old_to_new[old_idx] = 0  # new node
+            else:
+                idx_counter += 1
+                old_to_new[old_idx] = idx_counter
+        
+        # Fill new distance matrix
+        for old_i in range(n):
+            if old_i == j_star:
+                continue
+            for old_j in range(old_i + 1, n):
+                if old_j == j_star:
+                    continue
+                
+                new_i = old_to_new[old_i]
+                new_j = old_to_new[old_j]
+                
+                if old_i == i_star:
+                    # D(new_node, old_j)
+                    # = (D(i_star, old_j) + D(j_star, old_j) - D(i_star, j_star)) / 2
+                    dist_val = (distance_matrix[i_star, old_j] +
+                                distance_matrix[j_star, old_j] -
+                                distance_matrix[i_star, j_star]) / 2
+                    new_dist_matrix[new_i, new_j] = dist_val
+                    new_dist_matrix[new_j, new_i] = dist_val
+                elif old_j == i_star:
+                    # D(old_i, new_node)
+                    # = (D(old_i, i_star) + D(old_i, j_star) - D(i_star, j_star)) / 2
+                    dist_val = (distance_matrix[old_i, i_star] +
+                                distance_matrix[old_i, j_star] -
+                                distance_matrix[i_star, j_star]) / 2
+                    new_dist_matrix[new_i, new_j] = dist_val
+                    new_dist_matrix[new_j, new_i] = dist_val
+                else:
+                    # Copy over the old distance
+                    dist_val = distance_matrix[old_i, old_j]
+                    new_dist_matrix[new_i, new_j] = dist_val
+                    new_dist_matrix[new_j, new_i] = dist_val
+        
+        # Step 5b: Update the label list
+        new_labels_list = []
+        for old_idx in range(n):
+            if old_idx == j_star:
+                continue
+            elif old_idx == i_star:
+                # new node label
+                new_labels_list.append(new_label)
+            else:
+                new_labels_list.append(active_labels[old_idx])
+        
+        # Replace the old matrix with the new one
+        distance_matrix = new_dist_matrix
+        active_labels = new_labels_list
+    
+    # Finally, we have only 2 nodes left
+    # The distance matrix is 2x2 at this point
+    final_D = distance_matrix[0, 1]
+    label1, label2 = active_labels[0], active_labels[1]
+    
+    # This last join
+    new_node[f"({label1}-{label2})"] = [(label1, final_D/2), (label2, final_D/2)]
+    
+    return new_node
+
+# Run the complete NJ procedure:
+tree = neighbor_joining(distance_matrix, active_labels)
+
+# Print resulting tree structure
+import pprint
+pprint.pprint(tree)
+Explanation of Key Steps
+Updating the Distance Matrix (Step 5):
+
+
+以下是将所有 LaTeX 公式转换为纯文本格式后的修改内容，其余部分保持不变：
+
+We introduce a new node (say X) to replace the pair (i*, j*).
+
+For each existing node k:
+D(X, k) = (D(i*, k) + D(j*, k) - D(i*, j*)) / 2.
+
+We create a new (n - 1) × (n - 1) matrix by skipping j* and replacing i* with X in the indexing.
+Repeating (Step 6)
+
+We keep merging nodes until only 2 nodes remain in the matrix.
+The final 2x2 matrix indicates the last distance, which we split evenly between the final pair of nodes.
+Building the Tree Representation
+
+We use a dictionary new_node to store each newly formed node’s children and branch lengths. For instance,
+python
+Copy
+new_node["(A-B)"] = [("A", v_i), ("B", v_j)]
+In a more sophisticated implementation, you might store these relationships in a specialized tree data structure, then do a post-processing step to output a Newick string, etc.
+What to Do Next
+Finalize Tree Format: If you want a proper tree structure or a Newick string output, you can traverse the new_node relationships and convert them.
+Validation: Make sure that your code handles edge cases, such as distances that are zero or sequences that are extremely similar.
+Further Steps in Distance-Based Phylogenetics: Sometimes a final branch-length correction or ultrametric property enforcement is done (like in UPGMA). But for Neighbor-Joining, the above is the main process.
+This should help you integrate Steps 5 and 6 into a working Neighbor-Joining algorithm. Good luck with your phylogenetic inference!
+
+
+
+
+You said:
+Step7: And then summarise the previous steps of the calculation and express the result phylogenetic tree  in newick format. [Example, this is a tree in newick format containing five sequences ((seq1:0.1,seq2:0.2):0.3, ((seq3:0.1,seq4:0.2):0.3,seq5:0.4):0.5).]
+
+<Question>
+Can you generate a Python code for calculating the phylogenetic tree ?
+
+<Requirements>
+Do not use programming packages, follow my steps.
+Please output the result in newick format[Example, this is a tree in newick format containing five sequences ((seq1:0.1,seq2:0.2):0.3, ((seq3:0.1,seq4:0.2):0.3,seq5:0.4):0.5).].
+Show the distance matrix calculated at each step.
+ChatGPT
+
+Thought about generating phylogenetic tree in newick format，持续 29 秒
+Below is a pure Python implementation of Neighbor-Joining that follows the steps you’ve described (Steps 1–7), without using any external libraries (like NumPy). It uses the Hamming distance for pairwise distances, then performs the NJ algorithm step by step, prints the distance matrix at each iteration, and finally outputs the resulting tree in Newick format.
+
+You can adapt this code for your specific sequences or distance measures.
+
+Complete Python Script
+python
+Copy
+#!/usr/bin/env python3
+
+########################################################################
+# Neighbor-Joining (NJ) from scratch (no extra packages), following steps:
+#  1) Calculate distance matrix (D) using Hamming distance
+#  2) Compute u_i for each tip: u_i = sum(D[i][j])/(n-2)
+#  3) DIFF(i, j) = D(i, j) - u_i - u_j
+#  4) Select pair (i*, j*) with smallest DIFF(i,j); compute branch lengths
+#  5) Update the distance matrix to form a new node
+#  6) Repeat until only 2 nodes remain
+#  7) Output final phylogeny in Newick format
+########################################################################
+
+# ----------------------
+# Example input sequences
+# ----------------------
+sequences = {
+    "seq1": "CGGTTAGCCTATTCTTTCTCACGGGACTTCCCAAAGGTAAGCTTTTCAGG",
+    "seq2": "CGGTTAGCGTGTTCTTGCTCACGGGACCTGCGAAAGGTAAGCCTGTCACG",
+    "seq3": "AACCGTGAAACGACCCCCTCCTCATGCCTAACCAGCGCGAGCGGCCCGCG",
+    "seq4": "AAACATGCATCGTTCCTCCACTCATGGCCAACCAACCAGGGCGTCCCGGA",
+    "seq5": "ATGCGTGCCGAGTCCGACTCCGGGTCACCCGTTCACGTTAACGTCTCCGG"
+}
+
+########################################################################
+#  Step 1: Calculate the initial distance matrix (D) using Hamming distance
+########################################################################
+def hamming_distance(seq_a, seq_b):
+    """Compute Hamming distance between two sequences of equal length."""
+    assert len(seq_a) == len(seq_b), "Sequences must be of equal length."
+    return sum(ch1 != ch2 for ch1, ch2 in zip(seq_a, seq_b))
+
+# We store the matrix as a list of lists (D[i][j])
+# We'll also store a list of labels that match the matrix indices
+labels = list(sequences.keys())
+n = len(labels)
+
+# Build initial distance matrix
+D = []
+for i in range(n):
+    row = []
+    for j in range(n):
+        dist_ij = hamming_distance(sequences[labels[i]], sequences[labels[j]])
+        row.append(dist_ij)
+    D.append(row)
+
+########################################################################
+# Utility: Print the distance matrix with labels for clarity
+########################################################################
+def print_distance_matrix(D, labels, title="Distance Matrix"):
+    print(f"--- {title} ---")
+    print("    " + "  ".join(f"{lab:8s}" for lab in labels))
+    for i, row in enumerate(D):
+        row_str = "  ".join(f"{val:8.3f}" for val in row)
+        print(f"{labels[i]:4s} {row_str}")
+    print()
+
+########################################################################
+# Data structure for building the tree and then exporting to Newick
+########################################################################
+# We will store the "tree" in a dictionary: 
+#   node_name -> (child1, child2, branch_len_to_child1, branch_len_to_child2)
+# For leaves (original sequences), we won't store them in the dict initially.
+# As we merge two nodes, we create a new node label and record how it connects.
+########################################################################
+
+tree = {}  # e.g. tree["(seq1-seq2)"] = ("seq1", "seq2", 0.1, 0.2)
+
+# Function to generate a Newick string from the final merged node
+def generate_newick(node_label):
+    """
+    Recursively build a Newick string from 'tree' dict.
+    If node_label is a leaf (like 'seq1') it won't be in 'tree',
+    so just return leaf name.
+    If node_label is an internal node, expand children, etc.
+    """
+    # If leaf, just return the label
+    if node_label not in tree:
+        # It's an original sequence
+        return node_label
+    
+    # Otherwise, retrieve children
+    (childA, childB, distA, distB) = tree[node_label]
+    # Recursively get their Newick subtrees
+    subtreeA = generate_newick(childA)
+    subtreeB = generate_newick(childB)
+    
+    # Format with branch lengths: (subtreeA:distA, subtreeB:distB)
+    # Then no extra distance after for the parent, since we incorporate it in the parent's label
+    return f"({subtreeA}:{distA:.4f},{subtreeB}:{distB:.4f})"
+
+########################################################################
+# Main Neighbor-Joining procedure
+########################################################################
+
+def neighbor_joining(D, labels):
+    """
+    Perform Neighbor-Joining on distance matrix D with tip labels.
+    Return the final merged node label (which can then be turned into Newick).
+    Also prints the distance matrix at each iteration.
+    """
+    current_labels = labels[:]
+    step = 1
+    
+    while len(D) > 2:
+        n = len(D)
+        
+        # Print the current distance matrix
+        print_distance_matrix(D, current_labels, title=f"Distance Matrix (Step {step})")
+        
+        # Step 2: Compute u_i for each tip
+        # u_i = sum(D[i][j]) for j != i, divided by (n-2)
+        u = []
+        for i in range(n):
+            sum_dist = sum(D[i][j] for j in range(n) if j != i)
+            u_i = sum_dist / (n - 2)
+            u.append(u_i)
+        
+        # Step 3: Construct DIFF(i, j) = D(i,j) - u_i - u_j
+        # Find the pair (i*, j*) with minimal DIFF
+        min_diff = float('inf')
+        i_star, j_star = -1, -1
+        for i in range(n):
+            for j in range(i+1, n):
+                diff_ij = D[i][j] - u[i] - u[j]
+                if diff_ij < min_diff:
+                    min_diff = diff_ij
+                    i_star, j_star = i, j
+        
+        # Step 4: Compute branch lengths from the new node to i_star and j_star
+        Dij = D[i_star][j_star]
+        v_i = (Dij + u[i_star] - u[j_star]) / 2.0
+        v_j = (Dij + u[j_star] - u[i_star]) / 2.0
+        
+        # Create a new label for the merged node
+        new_label = f"({current_labels[i_star]}-{current_labels[j_star]})"
+        
+        # Record in 'tree' data structure
+        # We'll say new_label -> (child1, child2, dist_child1, dist_child2)
+        tree[new_label] = (current_labels[i_star], current_labels[j_star], v_i, v_j)
+        
+        # Step 5: Update the distance matrix
+        # We create a new matrix with one fewer row/column
+        new_size = n - 1
+        new_D = []
+        new_labels = []
+        
+        # The new node index in the new matrix will be i_star (we skip j_star).
+        # We'll fill row by row, skipping j_star.
+        
+        # Build an index map from old indices to new indices
+        # i_star will be new node's index
+        old_to_new = {}
+        idx_count = 0
+        for old_idx in range(n):
+            if old_idx == j_star:
+                continue
+            if old_idx == i_star:
+                old_to_new[old_idx] = 0
+            else:
+                idx_count += 1
+                old_to_new[old_idx] = idx_count
+        
+        # Initialize new_D as a (new_size x new_size) matrix of zeros
+        for _ in range(new_size):
+            new_D.append([0.0]*new_size)
+        
+        # Fill in new distance matrix
+        # D(new_node, k) = (D(i_star, k) + D(j_star, k) - D(i_star, j_star)) / 2
+        for old_i in range(n):
+            if old_i == j_star: 
+                continue
+            new_i = old_to_new[old_i]
+            for old_j in range(n):
+                if old_j == j_star:
+                    continue
+                new_j = old_to_new[old_j]
+                
+                if old_i == i_star and old_j == i_star:
+                    # Distance to itself is 0
+                    new_D[new_i][new_j] = 0.0
+                elif old_i == i_star:
+                    # new_node vs. old_j
+                    dist_val = (D[i_star][old_j] + D[j_star][old_j] - D[i_star][j_star]) / 2.0
+                    new_D[new_i][new_j] = dist_val
+                    new_D[new_j][new_i] = dist_val
+                elif old_j == i_star:
+                    # old_i vs. new_node
+                    dist_val = (D[old_i][i_star] + D[old_i][j_star] - D[i_star][j_star]) / 2.0
+                    new_D[new_i][new_j] = dist_val
+                    new_D[new_j][new_i] = dist_val
+                else:
+                    # Just copy the old distance
+                    new_D[new_i][new_j] = D[old_i][old_j]
+                    new_D[new_j][new_i] = D[old_j][old_i]
+        
+        # Update label list
+        new_labels_list = []
+        for old_idx in range(n):
+            if old_idx == j_star:
+                continue
+            if old_idx == i_star:
+                new_labels_list.append(new_label)
+            else:
+                new_labels_list.append(current_labels[old_idx])
+        
+        # Replace the old matrix and labels
+        D = new_D
+        current_labels = new_labels_list
+        
+        step += 1
+    
+    # When only two nodes remain, they have distance D[0][1]
+    # We connect them as final step
+    final_dist = D[0][1]
+    left_label = current_labels[0]
+    right_label = current_labels[1]
+    
+    # Make a final merged node
+    final_label = f"({left_label}-{right_label})"
+    tree[final_label] = (left_label, right_label, final_dist/2.0, final_dist/2.0)
+    
+    # Print the last distance matrix (2x2)
+    print_distance_matrix(D, current_labels, title=f"Distance Matrix (Step {step})")
+    
+    return final_label  # This is the root node label
+
+########################################################################
+# Run the NJ Algorithm
+########################################################################
+
+final_node_label = neighbor_joining(D, labels)
+
+########################################################################
+# Step 7: Summarize results and output in Newick format
+########################################################################
+
+newick_tree = generate_newick(final_node_label) + ";"  # standard Newick ends with semicolon
+
+print("Final Phylogenetic Tree in Newick format:")
+print(newick_tree)
+How This Code Works
+Collecting Sequences
+We put your five sequences in a dictionary named sequences. Keys (seq1, seq2, etc.) become the initial labels.
+
+Step 1: Calculate Distance Matrix
+
+We compute the Hamming distance between each pair of sequences to build the initial D matrix (a list of lists).
+Printing the Distance Matrix
+
+The function print_distance_matrix(...) prints a nicely formatted table of distances, so you can see how the matrix updates after each iteration.
+Neighbor-Joining Iterations (neighbor_joining(D, labels))
+
+We keep a list of current labels (current_labels) that correspond to rows/columns in D.
+
+Step 2: Compute ui
+For each node i, compute:
+ui = Σ(j ≠ i) D(i, j) / (n - 2)
+
+Step 3: Compute DIFF(i, j)
+Compute:
+DIFF(i, j) = D(i, j) - ui - uj
+
+Find the pair (i*, j*) that minimizes DIFF.
+
+Step 4: Join the pair into a new node
+Compute branch lengths:
+vi = (D(i*, j*) + ui* - uj*) / 2
+vj = (D(i*, j*) + uj* - ui*) / 2
+
+Step 5: Update the matrix
+Remove (i*, j*) and add the new node. Distances to the new node are computed as:
+D(new, k) = (D(i*, k) + D(j*, k) - D(i*, j*)) / 2
+Step 6: Repeat until only 2 nodes remain.
+Building the Tree Representation
+
+Each time we create a new node (say "(seq1-seq2)"), we record in a global dictionary tree:
+python
+Copy
+tree[new_label] = (childA, childB, dist_to_A, dist_to_B)
+Leaves (original sequences) are not in tree; they are recognized by the function generate_newick because they don’t appear as keys.
+Step 7: Output in Newick Format
+
+generate_newick(final_node_label) recursively visits child nodes, building a string like
+((seq1:0.10,seq2:0.20):0.30,(seq3:0.1,seq4:0.2):0.3);
+We append ";" to complete the standard Newick format.
+The final result prints to screen.
+Customizing
+Distance Metric: Replace hamming_distance with any other function you prefer (e.g., p-distance, Jukes-Cantor, etc.).
+Sequence Input: Load them from a file or from standard input.
+Intermediate Outputs: This code already prints the distance matrix at each step. You can also print out which pair was chosen, the 
+DIFF
+DIFF values, etc., if you wish.
+Labeling: Intermediate nodes are labeled as (label1-label2). You can rename them if needed.
+Example Output
+After running the script, you’ll see something like:
+
+less
+Copy
+--- Distance Matrix (Step 1) ---
+      seq1      seq2      seq3      seq4      seq5
+seq1   0.000   5.000   ...
+seq2   5.000   0.000   ...
+...
+--- Distance Matrix (Step 2) ---
+      ...
+...
+Final Phylogenetic Tree in Newick format:
+((seq1:0.1000,seq2:0.2000):0.3000,((seq3:0.1000,seq4:0.2000):0.3000,seq5:0.4000):0.5000);
+(Exact distances will, of course, depend on your particular sequences.)
+
+This satisfies your requirement to show each updated distance matrix, then output the final tree in Newick format—all done without any external packages.

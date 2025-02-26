@@ -1,0 +1,57 @@
+
+It seems that the necessary bioinformatics library (Biopython) isn't available in the current environment. However, I can guide you through the process of generating a phylogenetic tree using Python with Biopython on your local machine.
+
+Here is a step-by-step guide:
+
+1. **Install Biopython**:
+   You can install Biopython using pip if you don't already have it:
+   ```bash
+   pip install biopython
+   ```
+
+2. **Create a Python script**:
+   Save the following code into a Python script, for example, `phylogenetic_tree.py`:
+
+   ```python
+   from Bio import Phylo
+   from Bio.Phylo.TreeConstruction import DistanceTreeConstructor, DistanceCalculator
+   from Bio.Seq import Seq
+   from Bio.SeqRecord import SeqRecord
+   from Bio.Align import MultipleSeqAlignment
+
+   # Define the sequences
+   sequences = [
+       SeqRecord(Seq("CGGTTAGCCTATTCTTTCTCACGGGACTTCCCAAAGGTAAGCTTTTCAGG"), id="seq1"),
+       SeqRecord(Seq("CGGTTAGCGTGTTCTTGCTCACGGGACCTGCGAAAGGTAAGCCTGTCACG"), id="seq2"),
+       SeqRecord(Seq("AACCGTGAAACGACCCCCTCCTCATGCCTAACCAGCGCGAGCGGCCCGCG"), id="seq3"),
+       SeqRecord(Seq("AAACATGCATCGTTCCTCCACTCATGGCCAACCAACCAGGGCGTCCCGGA"), id="seq4"),
+       SeqRecord(Seq("ATGCGTGCCGAGTCCGACTCCGGGTCACCCGTTCACGTTAACGTCTCCGG"), id="seq5")
+   ]
+
+   # Perform multiple sequence alignment
+   alignment = MultipleSeqAlignment(sequences)
+
+   # Calculate the distance matrix
+   calculator = DistanceCalculator('identity')
+   dm = calculator.get_distance(alignment)
+
+   # Construct the phylogenetic tree
+   constructor = DistanceTreeConstructor()
+   tree = constructor.nj(dm)
+
+   # Draw the phylogenetic tree
+   import matplotlib.pyplot as plt
+
+   fig = plt.figure(figsize=(10, 5))
+   Phylo.draw(tree, do_show=False)
+   plt.title("Phylogenetic Tree")
+   plt.show()
+   ```
+
+3. **Run the script**:
+   Execute the script by running:
+   ```bash
+   python phylogenetic_tree.py
+   ```
+
+This will generate and display a phylogenetic tree based on your sequences. If you need further assistance or have any issues, feel free to ask!

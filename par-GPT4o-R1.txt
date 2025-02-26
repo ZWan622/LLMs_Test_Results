@@ -1,0 +1,119 @@
+Here's an R script that implements the Fitch algorithm for constructing a parsimony phylogenetic tree and outputs the result in Newick format.
+
+Fitch Algorithm Tree
+
+library(ape)
+
+# Input sequences
+sequences <- list(
+  H = "TTAGCTACT",
+  C = "CTAGCTCCC",
+  G = "CTGGCCACT",
+  O = "CTGGACCCT"
+)
+
+# Function to calculate Fitch score for a topology
+fitch_score <- function(tree, sequences) {
+  sites <- nchar(sequences[[1]])
+  total_mutations <- 0
+
+  for (i in 1:sites) {
+    # Extract the character at position i for each sequence
+    site_data <- sapply(sequences, function(seq) substr(seq, i, i))
+
+    # Initialize states for the tree's tips
+    tip_states <- setNames(lapply(site_data, function(x) set(x)), names(sequences))
+
+    # Perform bottom-up calculation of internal nodes
+    node_states <- list()
+    mutations <- 0
+
+    for (node in rev(tree$edge[, 1])) {
+      children <- which(tree$edge[, 1] == node)
+      child1 <- tree$edge[children[1], 2]
+      child2 <- tree$edge[children[2], 2]
+
+      set1 <- ifelse(child1 <= length(tip_states), tip_states[[child1]], node_states[[child1]])
+      set2 <- ifelse(child2 <= length(tip_states), tip_states[[child2]], node_states[[child2]])
+
+      intersection <- intersect(set1, set2)
+      if (length(intersection) > 0) {
+        node_states[[node]] <- intersection
+      } else {
+        node_states[[node]] <- union(set1, set2)
+        mutations <- mutations + 1
+      }
+    }
+
+    total_mutations <- total_mutations + mutations
+  }
+
+  return(total_mutations)
+}
+
+# Generate all possible unrooted topologies
+tips <- names(sequences)
+trees <- unrooted.trees <- allTrees(length(tips))
+
+# Evaluate Fitch score for each tree
+scores <- sapply(trees, fitch_score, sequences = sequences)
+
+# Select the optimal tree
+optimal_tree <- trees[[which.min(scores)]]
+
+# Convert the optimal tree to Newick format
+newick <- write.tree(optimal_tree)
+
+cat("Optimal tree in Newick format:\n")
+cat(newick, "\n")
+
+The R code above calculates the parsimony phylogenetic tree using the Fitch algorithm for the given sequences and outputs the result in Newick format. You can copy and run this script in your R environment to get the desired output. Let me know if you need further clarification or help!
+
+
+
+
+You said:
+  Cell In[14], line 13
+    sites <- nchar(sequences[[1]])
+    ^
+SyntaxError: invalid syntax. Perhaps you forgot a comma?
+ChatGPT said:
+ChatGPT
+The error indicates you're running the R code in a Python or another non-R environment. R code must be executed in an R interpreter, such as RStudio, R console, or any tool that supports R execution.
+
+If you intended to run the script in Python, you need to use an R interface, such as the rpy2 library in Python. Would you like instructions for running R code directly, or help converting this into a Python-compatible script using an R interface?
+
+
+
+
+You said:
+can u calculate parsimony score?
+ChatGPT said:
+ChatGPT
+Certainly! Let's calculate the parsimony score using the Fitch algorithm for your sequences step-by-step. Here's how I'll approach it:
+
+Align sequences: I’ll process your sequences: H, C, G, O.
+
+Define topology: Use a simple topology (binary tree) with relationships among sequences. Since we are computing manually, we'll use an example topology.
+
+Compute bottom-up mutation counts for each site: We'll compute the intersection and union of character states at each internal node and count mutation steps.
+
+Let me calculate the parsimony score for these sequences.
+
+The parsimony score for the given sequences using the specified topology 
+(
+(
+𝐻
+,
+𝐶
+)
+,
+(
+𝐺
+,
+𝑂
+)
+)
+((H,C),(G,O)) is 7. This score represents the minimum number of evolutionary changes (mutations) required to explain the data on this tree.
+
+Let me know if you'd like to explore alternative topologies or need further analysis! ​

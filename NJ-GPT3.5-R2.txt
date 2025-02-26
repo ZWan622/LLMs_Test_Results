@@ -1,0 +1,40 @@
+R Script: Neighbor Joining Phylogenetic Tree
+R
+Copy
+Edit
+# Install and load the 'ape' package if not already installed
+if (!requireNamespace("ape", quietly = TRUE)) {
+  install.packages("ape")
+}
+library(ape)
+
+# Define the distance matrix
+distance_matrix <- matrix(c(0, 10, 12, 11,
+                            10, 0, 7, 13,
+                            12, 7, 0, 5,
+                            11, 13, 5, 0),
+                          nrow = 4, byrow = TRUE,
+                          dimnames = list(c("A", "B", "C", "D"),
+                                          c("A", "B", "C", "D")))
+
+# Print the distance matrix
+print(distance_matrix)
+
+# Build a phylogenetic tree using the Neighbor Joining algorithm
+nj_tree <- nj(as.dist(distance_matrix))
+
+# Plot the phylogenetic tree
+plot(nj_tree)
+Key Steps Explained:
+Installing and Loading the ape Package:
+
+The script checks if the ape package is installed. If not, it installs it and loads it using library(ape).
+Defining the Distance Matrix:
+
+A symmetric distance matrix is created with the sequences labeled "A", "B", "C", and "D".
+Constructing the Phylogenetic Tree:
+
+The nj() function from the ape package is used to generate the Neighbor Joining tree.
+Plotting the Tree:
+
+The plot() function visualizes the tree.

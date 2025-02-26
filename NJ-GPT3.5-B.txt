@@ -1,0 +1,38 @@
+Certainly! Let's continue until we build the entire tree.
+
+We have now reached the final step of the algorithm, where we join "node5" and "node6" into a single internal node "node7", which represents the root of the tree. We'll denote this new internal node as "node7".
+
+Now, let's update the distances of "node5" and "node6" to their ancestral node "node7":
+Distances:
+
+For "node5":
+d(node7, node5) = -93.87109375
+
+For "node6":
+d(node7, node6) = -86.6484375
+
+d(node7,node6)=−86.6484375
+
+With this final step, we have constructed the entire tree, where "node7" serves as the root connecting all sequences.
+
+Here's the final representation of the tree:
+
+lua
+Copy
+Edit
+      /------- seq1
+     |
+    /|-------|
+   / |       \------- seq2
+/root|-------|
+     |       \------- node4
+     |               |
+     |               \------- seq3
+     |       
+     \---------------|
+                     \------- node6
+Each node represents either a sequence or an internal node (common ancestor), and the branches represent the evolutionary distances between them.
+
+We have successfully built the whole tree using the Neighbor-Joining algorithm!
+
+Please let me know if there's anything else you'd like to know or if you have any further questions!

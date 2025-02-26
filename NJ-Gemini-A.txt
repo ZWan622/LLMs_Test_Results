@@ -1,0 +1,156 @@
+I'll read the sequences and then construct a phylogenetic tree in Newick format.
+
+Python
+
+from Bio import Phylo
+from Bio.Phylo.TreeConstruction import DistanceCalculator
+from Bio.Phylo.TreeConstruction import DistanceTreeConstructor
+from Bio.Align.Applications import ClustalwCommandline
+import os
+
+# Sequences from the provided data
+sequences = [
+    "CGGTTAGCCTATTCTTTCTCACGGGACTTCCCAAAGGTAAGCTTTTCAGG",
+    "CGGTTAGCGTGTTCTTGCTCACGGGACCTGCGAAAGGTAAGCCTGTCACG",
+    "AACCGTGAAACGACCCCCTCCTCATGCCTAACCAGCGCGAGCGGCCCGCG",
+    "AAACATGCATCGTTCCTCCACTCATGGCCAACCAACCAGGGCGTCCCGGA",
+    "ATGCGTGCCGAGTCCGACTCCGGGTCACCCGTTCACGTTAACGTCTCCGG"
+]
+
+# Create a temporary fasta file for ClustalW
+with open("sequences.fasta", "w") as f:
+    for i, seq in enumerate(sequences):
+        f.write(f">seq{i + 1}\n{seq}\n")
+
+# Run ClustalW to generate the alignment
+clustalw_cline = ClustalwCommandline("clustalw2", infile="sequences.fasta")
+os.system(str(clustalw_cline))
+
+# Read the alignment file
+align = AlignIO.read("sequences.aln", "clustal")
+
+# Calculate the distance matrix
+calculator = DistanceCalculator('identity')
+dm = calculator.get_distance(align)
+
+# Construct the phylogenetic tree using NJ method
+constructor = DistanceTreeConstructor(dm)
+tree = constructor.nj()
+
+# Convert the tree to Newick format
+newick_tree = tree.format("newick")
+
+# Print the result
+print(newick_tree)
+Code output
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'Bio'
+
+I'll use the phylogram library for creating a phylogenetic tree in Newick format.
+
+Python
+
+# Install biopython library if not already installed
+!pip install biopython
+
+from Bio import Phylo
+from Bio.Phylo.TreeConstruction import DistanceCalculator
+from Bio.Phylo.TreeConstruction import DistanceTreeConstructor
+from Bio.Align.Applications import ClustalwCommandline
+from Bio import AlignIO
+import os
+
+# Sequences from the provided data
+sequences = [
+    "CGGTTAGCCTATTCTTTCTCACGGGACTTCCCAAAGGTAAGCTTTTCAGG",
+    "CGGTTAGCGTGTTCTTGCTCACGGGACCTGCGAAAGGTAAGCCTGTCACG",
+    "AACCGTGAAACGACCCCCTCCTCATGCCTAACCAGCGCGAGCGGCCCGCG",
+    "AAACATGCATCGTTCCTCCACTCATGGCCAACCAACCAGGGCGTCCCGGA",
+    "ATGCGTGCCGAGTCCGACTCCGGGTCACCCGTTCACGTTAACGTCTCCGG"
+]
+
+# Create a temporary fasta file for ClustalW
+with open("sequences.fasta", "w") as f:
+    for i, seq in enumerate(sequences):
+        f.write(f">seq{i + 1}\n{seq}\n")
+
+# Run ClustalW to generate the alignment
+clustalw_cline = ClustalwCommandline("clustalw2", infile="sequences.fasta")
+os.system(str(clustalw_cline))
+
+# Read the alignment file
+align = AlignIO.read("sequences.aln", "clustal")
+
+# Calculate the distance matrix
+calculator = DistanceCalculator('identity')
+dm = calculator.get_distance(align)
+
+# Construct the phylogenetic tree using NJ method
+constructor = DistanceTreeConstructor(dm)
+tree = constructor.nj()
+
+# Convert the tree to Newick format
+newick_tree = tree.format("newick")
+
+# Print the result
+print(newick_tree)
+Code output
+Traceback (most recent call last):
+  File "<string>", line 2
+    !pip install biopython
+    ^
+SyntaxError: invalid syntax
+
+I'll use the phylogram library for creating a phylogenetic tree in Newick format.
+
+Python
+
+from Bio import Phylo
+from Bio.Phylo.TreeConstruction import DistanceCalculator
+from Bio.Phylo.TreeConstruction import DistanceTreeConstructor
+from Bio.Align.Applications import ClustalwCommandline
+from Bio import AlignIO
+import os
+
+# Sequences from the provided data
+sequences = [
+    "CGGTTAGCCTATTCTTTCTCACGGGACTTCCCAAAGGTAAGCTTTTCAGG",
+    "CGGTTAGCGTGTTCTTGCTCACGGGACCTGCGAAAGGTAAGCCTGTCACG",
+    "AACCGTGAAACGACCCCCTCCTCATGCCTAACCAGCGCGAGCGGCCCGCG",
+    "AAACATGCATCGTTCCTCCACTCATGGCCAACCAACCAGGGCGTCCCGGA",
+    "ATGCGTGCCGAGTCCGACTCCGGGTCACCCGTTCACGTTAACGTCTCCGG"
+]
+
+# Create a temporary fasta file for ClustalW
+with open("sequences.fasta", "w") as f:
+    for i, seq in enumerate(sequences):
+        f.write(f">seq{i + 1}\n{seq}\n")
+
+# Run ClustalW to generate the alignment
+clustalw_cline = ClustalwCommandline("clustalw2", infile="sequences.fasta")
+os.system(str(clustalw_cline))
+
+# Read the alignment file
+align = AlignIO.read("sequences.aln", "clustal")
+
+# Calculate the distance matrix
+calculator = DistanceCalculator('identity')
+dm = calculator.get_distance(align)
+
+# Construct the phylogenetic tree using NJ method
+constructor = DistanceTreeConstructor(dm)
+tree = constructor.nj()
+
+# Convert the tree to Newick format
+newick_tree = tree.format("newick")
+
+# Print the result
+print(newick_tree)
+Code output
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'Bio'
+
+I'll use the phylogram library for creating a phylogenetic tree in Newick format.
+I couldn't complete your request. Rephrase your prompt and try again.

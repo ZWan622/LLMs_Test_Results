@@ -1,0 +1,61 @@
+To generate a phylogenetic tree using the Neighbor-Joining (NJ) algorithm for the given sequences, I'll first compute the pairwise distances between the sequences, then follow the recursive steps to build the tree and output it in Newick format.
+
+It seems I cannot directly execute the necessary biological computation in this environment due to missing dependencies. However, I can guide you step-by-step to run this on your own system using Python with the Biopython library. Here's how:
+
+Step-by-Step Guide:
+Install Biopython: Run the following command in your terminal or command prompt:
+
+bash
+Copy
+Edit
+pip install biopython
+Python Code: Use the following Python script to calculate the distance matrix at each step and generate the phylogenetic tree in Newick format:
+
+python
+Copy
+Edit
+from Bio import Phylo
+from Bio.Phylo.TreeConstruction import DistanceCalculator, DistanceTreeConstructor
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
+from Bio.Align import MultipleSeqAlignment
+import pandas as pd
+
+# Define the sequences
+sequences = [
+    SeqRecord(Seq("CGGTTAGCCTATTCTTTCTCACGGGACTTCCCAAAGGTAAGCTTTTCAGG"), id="seq1"),
+    SeqRecord(Seq("CGGTTAGCGTGTTCTTGCTCACGGGACCTGCGAAAGGTAAGCCTGTCACG"), id="seq2"),
+    SeqRecord(Seq("AACCGTGAAACGACCCCCTCCTCATGCCTAACCAGCGCGAGCGGCCCGCG"), id="seq3"),
+    SeqRecord(Seq("AAACATGCATCGTTCCTCCACTCATGGCCAACCAACCAGGGCGTCCCGGA"), id="seq4"),
+    SeqRecord(Seq("ATGCGTGCCGAGTCCGACTCCGGGTCACCCGTTCACGTTAACGTCTCCGG"), id="seq5")
+]
+
+# Create a multiple sequence alignment
+alignment = MultipleSeqAlignment(sequences)
+
+# Calculate the pairwise distance matrix using "identity" metric
+calculator = DistanceCalculator('identity')
+distance_matrix = calculator.get_distance(alignment)
+
+# Display the initial distance matrix
+distance_df = pd.DataFrame(data=distance_matrix.matrix, 
+                           index=distance_matrix.names, 
+                           columns=distance_matrix.names)
+print("Initial Distance Matrix:")
+print(distance_df)
+
+# Use the DistanceTreeConstructor to construct the tree using NJ
+constructor = DistanceTreeConstructor(calculator, 'nj')
+tree = constructor.build_tree(alignment)
+
+# Export the tree in Newick format
+newick_tree = tree.format("newick")
+print("\nPhylogenetic Tree in Newick Format:")
+print(newick_tree)
+Run the Script: Save the script as nj_tree.py and execute it in your Python environment:
+
+bash
+Copy
+Edit
+python nj_tree.py
+This will output the distance matrix at the start and generate the phylogenetic tree in Newick format. Let me know if you need further assistance! ​

@@ -1,0 +1,55 @@
+Step 1: Calculate the Hamming distance for each sequence and generate a distance matrix
+python
+def hamming_distance(seq1, seq2):
+    assert len(seq1) == len(seq2)
+    return sum(c1 != c2 for c1, c2 in zip(seq1, seq2))
+
+sequences = {
+    'seq1': 'CGGTTAGCCTATTCTTTCTCACGGGACTTCCCAAAGGTAAGCTTTTCAGG',
+    'seq2': 'CGGTTAGCGTGTTCTTGCTCACGGGACCTGCGAAAGGTAAGCCTGTCACG',
+    'seq3': 'AACCGTGAAACGACCCCCTCCTCATGCCTAACCAGCGCGAGCGGCCCGCG',
+    'seq4': 'AAACATGCATCGTTCCTCCACTCATGGCCAACCAACCAGGGCGTCCCGGA',
+    'seq5': 'ATGCGTGCCGAGTCCGACTCCGGGTCACCCGTTCACGTTAACGTCTCCGG',
+}
+
+names = list(sequences.keys())
+distance_matrix = [[0] * len(sequences) for _ in range(len(sequences))]
+
+for i in range(len(names)):
+    for j in range(i + 1, len(names)):
+        distance = hamming_distance(sequences[names[i]], sequences[names[j]])
+        distance_matrix[i][j] = distance
+        distance_matrix[j][i] = distance
+
+for row in distance_matrix:
+    print(row)
+Step 2: Compute the average distance for each tip
+python
+def calculate_u(distance_matrix):
+    u_values = []
+    for i in range(len(distance_matrix)):
+        u_i = sum(distance_matrix[i][j] for j in range(len(distance_matrix)) if j != i) / (len(distance_matrix) - 2)
+        u_values.append(u_i)
+    return u_values
+
+u_values = calculate_u(distance_matrix)
+print(u_values)
+Step 3: Calculate DIFF(i, j)
+python
+def calculate_diff(distance_matrix, u_values):
+    diff_matrix = [[0] * len(distance_matrix) for _ in range(len(distance_matrix))]
+    for i in range(len(distance_matrix)):
+        for j in range(i + 1, len(distance_matrix)):
+            diff_matrix[i][j] = distance_matrix[i][j] - u_values[i] - u_values[j]
+            diff_matrix[j][i] = diff_matrix[i][j]
+    return diff_matrix
+
+diff_matrix = calculate_diff(distance_matrix, u_values)
+for row in diff_matrix:
+    print(row)
+Step 4: Select the pair with the smallest DIFF(i, j) value and connect them
+Step 5: Update the distance matrix D
+Step 6: Repeat steps 1-5 until only two nodes are left
+Step 7: Output the result in Newick format
+This is a complex procedure, so I'll proceed to complete these steps. Stay tuned!
+I'll provide more comprehensive Python code in subsequent turns to complete steps 4, 5, and 6, and finally summarize the result in Newick format. Stay with me!

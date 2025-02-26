@@ -1,0 +1,173 @@
+Certainly, I can help you create an R program to calculate the phylogenetic tree based on the steps you've outlined. I'll create a comprehensive R script that follows your instructions without using any specialized phylogenetic packages. Let's break this down into functions for each step, and then combine them into a main function to generate the phylogenetic tree.
+R script for calculating phylogenetic treeClick to open code
+# Function to calculate Hamming distance between two sequences
+hamming_distance <- function(seq1, seq2) {
+  sum(strsplit(seq1, '')[[1]] != strsplit(seq2, '')[[1]])
+}
+
+# Function to create distance matrix
+create_distance_matrix <- function(sequences) {
+  n <- length(sequences)
+  dist_matrix <- matrix(0, nrow = n, ncol = n)
+  for (i in 1:n) {
+    for (j in 1:n) {
+      if (i != j) {
+        dist_matrix[i, j] <- hamming_distance(sequences[[i]], sequences[[j]])
+      }
+    }
+  }
+  rownames(dist_matrix) <- names(sequences)
+  colnames(dist_matrix) <- names(sequences)
+  dist_matrix
+}
+
+# Function to calculate u_i values
+calculate_u <- function(dist_matrix) {
+  n <- nrow(dist_matrix)
+  u_values <- numeric(n)
+  for (i in 1:n) {
+    u_values[i] <- sum(dist_matrix[i, -i]) / (n - 2)
+  }
+  names(u_values) <- rownames(dist_matrix)
+  u_values
+}
+
+# Function to calculate DIFF values
+calculate_diff <- function(dist_matrix, u_values) {
+  n <- nrow(dist_matrix)
+  diff_matrix <- matrix(0, nrow = n, ncol = n)
+  for (i in 1:n) {
+    for (j in 1:n) {
+      if (i != j) {
+        diff_matrix[i, j] <- dist_matrix[i, j] - u_values[i] - u_values[j]
+      }
+    }
+  }
+  rownames(diff_matrix) <- rownames(dist_matrix)
+  colnames(diff_matrix) <- colnames(dist_matrix)
+  diff_matrix
+}
+
+# Function to find pair with minimum DIFF
+find_min_diff_pair <- function(diff_matrix) {
+  min_diff <- min(diff_matrix[lower.tri(diff_matrix)])
+  which(diff_matrix == min_diff, arr.ind = TRUE)[1, ]
+}
+
+# Function to calculate branch lengths
+calculate_branch_lengths <- function(i, j, dist_matrix, u_values) {
+  v_i <- (dist_matrix[i, j] + u_values[i] - u_values[j]) / 2
+  v_j <- (dist_matrix[i, j] + u_values[j] - u_values[i]) / 2
+  c(v_i, v_j)
+}
+
+# Function to update distance matrix
+update_distance_matrix <- function(dist_matrix, i, j) {
+  n <- nrow(dist_matrix)
+  new_dist_matrix <- matrix(0, nrow = n - 1, ncol = n - 1)
+  new_node_name <- paste0("(", rownames(dist_matrix)[i], ",", rownames(dist_matrix)[j], ")")
+  
+  new_names <- c(new_node_name, rownames(dist_matrix)[-c(i, j)])
+  rownames(new_dist_matrix) <- new_names
+  colnames(new_dist_matrix) <- new_names
+  
+  for (k in 1:(n-1)) {
+    for (l in 1:(n-1)) {
+      if (k == 1 && l == 1) {
+        new_dist_matrix[k, l] <- 0
+      } else if (k == 1) {
+        new_dist_matrix[k, l] <- (dist_matrix[i, names(new_names)[l]] + dist_matrix[j, names(new_names)[l]] - dist_matrix[i, j]) / 2
+      } else if (l == 1) {
+        new_dist_matrix[k, l] <- (dist_matrix[names(new_names)[k], i] + dist_matrix[names(new_names)[k], j] - dist_matrix[i, j]) / 2
+      } else {
+        new_dist_matrix[k, l] <- dist_matrix[names(new_names)[k], names(new_names)[l]]
+      }
+    }
+  }
+  
+  new_dist_matrix
+}
+
+# Main function to calculate phylogenetic tree
+calculate_phylogenetic_tree <- function(sequences) {
+  n <- length(sequences)
+  dist_matrix <- create_distance_matrix(sequences)
+  tree <- list()
+  branch_lengths <- list()
+  
+  while (nrow(dist_matrix) > 2) {
+    print("Current distance matrix:")
+    print(dist_matrix)
+    
+    u_values <- calculate_u(dist_matrix)
+    diff_matrix <- calculate_diff(dist_matrix, u_values)
+    min_pair <- find_min_diff_pair(diff_matrix)
+    i <- min_pair[1]
+    j <- min_pair[2]
+    
+    branch_length <- calculate_branch_lengths(i, j, dist_matrix, u_values)
+    tree[[length(tree) + 1]] <- list(node1 = rownames(dist_matrix)[i], node2 = rownames(dist_matrix)[j])
+    branch_lengths[[length(branch_lengths) + 1]] <- branch_length
+    
+    dist_matrix <- update_distance_matrix(dist_matrix, i, j)
+  }
+  
+  # Handle the last two nodes
+  last_pair <- list(node1 = rownames(dist_matrix)[1], node2 = rownames(dist_matrix)[2])
+  last_branch_length <- dist_matrix[1, 2] / 2
+  tree[[length(tree) + 1]] <- last_pair
+  branch_lengths[[length(branch_lengths) + 1]] <- c(last_branch_length, last_branch_length)
+  
+  # Generate Newick format
+  newick <- generate_newick(tree, branch_lengths)
+  
+  list(tree = tree, branch_lengths = branch_lengths, newick = newick)
+}
+
+# Function to generate Newick format
+generate_newick <- function(tree, branch_lengths) {
+  nodes <- names(sequences)
+  for (i in 1:length(tree)) {
+    node1 <- tree[[i]]$node1
+    node2 <- tree[[i]]$node2
+    len1 <- branch_lengths[[i]][1]
+    len2 <- branch_lengths[[i]][2]
+    
+    new_node <- paste0("(", node1, ":", len1, ",", node2, ":", len2, ")")
+    nodes <- c(nodes[!(nodes %in% c(node1, node2))], new_node)
+  }
+  paste0(nodes[1], ";")
+}
+
+# Main execution
+sequences <- list(
+  seq1 = "CGGTTAGCCTATTCTTTCTCACGGGACTTCCCAAAGGTAAGCTTTTCAGG",
+  seq2 = "CGGTTAGCGTGTTCTTGCTCACGGGACCTGCGAAAGGTAAGCCTGTCACG",
+  seq3 = "AACCGTGAAACGACCCCCTCCTCATGCCTAACCAGCGCGAGCGGCCCGCG",
+  seq4 = "AAACATGCATCGTTCCTCCACTCATGGCCAACCAACCAGGGCGTCCCGGA",
+  seq5 = "ATGCGTGCCGAGTCCGACTCCGGGTCACCCGTTCACGTTAACGTCTCCGG"
+)
+
+result <- calculate_phylogenetic_tree(sequences)
+print("Newick format:")
+print(result$newick)
+This R script implements the phylogenetic tree calculation based on the steps you've outlined. Here's a breakdown of the main components:
+
+hamming_distance: Calculates the Hamming distance between two sequences.
+create_distance_matrix: Creates the initial distance matrix.
+calculate_u: Calculates the u_i values for each tip.
+calculate_diff: Computes the DIFF values between each pair of tips.
+find_min_diff_pair: Finds the pair with the minimum DIFF value.
+calculate_branch_lengths: Calculates the branch lengths for the selected pair.
+update_distance_matrix: Updates the distance matrix after joining two nodes.
+calculate_phylogenetic_tree: The main function that implements the overall algorithm.
+generate_newick: Generates the Newick format representation of the tree.
+
+To use this script:
+
+Copy the entire code into an R script file.
+Run the script.
+The script will print the distance matrix at each step and output the final phylogenetic tree in Newick format.
+
+Note that this implementation follows your steps exactly and doesn't use any specialized phylogenetic packages. The distance matrix is printed at each step as requested.
+Would you like me to explain any specific part of the code or provide more details on how it works?

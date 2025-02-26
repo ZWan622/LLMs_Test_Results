@@ -1,0 +1,119 @@
+Certainly, I'll generate the parsimony phylogenetic tree for these sequences following the Fitch Algorithm steps you've provided. Let's go through this process step-by-step.
+
+Input:
+We have four sequences: H, C, G, and O.
+Leaf Node Initialization:
+H: {T,A,G,C,T,A,C,T}
+C: {C,T,A,G,C,T,C,C,C}
+G: {C,T,G,G,C,C,A,C,T}
+O: {C,T,G,G,A,C,C,C,T}
+Bottom-Up Calculation of Internal Nodes:
+We need to consider all possible topologies. For four taxa, there are three possible unrooted topologies. Let's examine each:
+
+Topology 1: (H,C),(G,O)
+Topology 2: (H,G),(C,O)
+Topology 3: (H,O),(C,G)
+Let's calculate for each topology:
+Topology 1: (H,C),(G,O)
+For (H,C):
+1: {T,C} (union)
+2: {T}
+3: {A}
+4: {G}
+5: {C}
+6: {T}
+7: {A,C} (union)
+8: {C}
+9: {T,C} (union)
+For (G,O):
+1: {C}
+2: {T}
+3: {G}
+4: {G}
+5: {A,C} (union)
+6: {C}
+7: {C}
+8: {C}
+9: {T}
+Root:
+1: {C,T} (union)
+2: {T}
+3: {A,G} (union)
+4: {G}
+5: {C}
+6: {C,T} (union)
+7: {C}
+8: {C}
+9: {T}
+Total mutations: 6
+Topology 2: (H,G),(C,O)
+For (H,G):
+1: {T,C} (union)
+2: {T}
+3: {A,G} (union)
+4: {G}
+5: {C}
+6: {C,A} (union)
+7: {C}
+8: {C}
+9: {T}
+For (C,O):
+1: {C}
+2: {T}
+3: {G}
+4: {G}
+5: {A,C} (union)
+6: {C}
+7: {C}
+8: {C}
+9: {C,T} (union)
+Root:
+1: {C}
+2: {T}
+3: {G}
+4: {G}
+5: {C}
+6: {C}
+7: {C}
+8: {C}
+9: {T}
+Total mutations: 5
+Topology 3: (H,O),(C,G)
+For (H,O):
+1: {T,C} (union)
+2: {T}
+3: {A,G} (union)
+4: {G}
+5: {A,C} (union)
+6: {A,C} (union)
+7: {C}
+8: {C}
+9: {T}
+For (C,G):
+1: {C}
+2: {T}
+3: {A,G} (union)
+4: {G}
+5: {C}
+6: {C}
+7: {C,A} (union)
+8: {C}
+9: {C,T} (union)
+Root:
+1: {C}
+2: {T}
+3: {G}
+4: {G}
+5: {C}
+6: {C}
+7: {C}
+8: {C}
+9: {T}
+Total mutations: 7
+
+Select the Optimal Tree:
+The topology with the minimum number of mutations is Topology 2: (H,G),(C,O) with 5 mutations.
+Output in Newick format:
+((H,G),(C,O));
+
+This Newick format represents the optimal parsimony phylogenetic tree for the given sequences. The tree groups H with G, and C with O, which corresponds to the topology that required the least number of mutations (5) according to the Fitch Algorithm.

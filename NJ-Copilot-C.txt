@@ -1,0 +1,69 @@
+Absolutely, let's create a Python code to follow the steps you outlined for generating a phylogenetic tree. Here's a script that performs the required calculations and outputs the result in Newick format:
+python
+from itertools import combinations
+
+# Hamming distance function
+def hamming_distance(seq1, seq2):
+    return sum(c1 != c2 for c1, c2 in zip(seq1, seq2))
+
+# Input sequences
+sequences = {
+    "seq1": "CGGTTAGCCTATTCTTTCTCACGGGACTTCCCAAAGGTAAGCTTTTCAGG",
+    "seq2": "CGGTTAGCGTGTTCTTGCTCACGGGACCTGCGAAAGGTAAGCCTGTCACG",
+    "seq3": "AACCGTGAAACGACCCCCTCCTCATGCCTAACCAGCGCGAGCGGCCCGCG",
+    "seq4": "AAACATGCATCGTTCCTCCACTCATGGCCAACCAACCAGGGCGTCCCGGA",
+    "seq5": "ATGCGTGCCGAGTCCGACTCCGGGTCACCCGTTCACGTTAACGTCTCCGG"
+}
+
+# Calculate the initial distance matrix
+distance_matrix = {
+    (i, j): hamming_distance(sequences[i], sequences[j])
+    for i, j in combinations(sequences, 2)
+}
+
+# Convert to distance matrix form
+def update_matrix(matrix, nodes, new_node):
+    updated_matrix = {}
+    new_sequences = list(nodes) + [new_node]
+    
+    for i, j in combinations(new_sequences, 2):
+        if i == new_node or j == new_node:
+            if i == new_node:
+                old_node = j
+            else:
+                old_node = i
+            D_new_node_old_node = (matrix.get((new_node[0], old_node), 0) + matrix.get((new_node[1], old_node), 0) - matrix.get((new_node[0], new_node[1]), 0)) / 2
+            updated_matrix[(new_node, old_node)] = D_new_node_old_node
+        else:
+            updated_matrix[(i, j)] = matrix[(i, j)]
+    return updated_matrix
+
+# UPGMA algorithm
+nodes = set(sequences.keys())
+while len(nodes) > 2:
+    u_values = {i: sum(distance_matrix[(i, j)] for j in nodes if i != j) / (len(nodes) - 2) for i in nodes}
+    diff_values = {(i, j): distance_matrix[(i, j)] - u_values[i] - u_values[j] for i, j in combinations(nodes, 2)}
+    closest_pair = min(diff_values, key=diff_values.get)
+    
+    new_node = (closest_pair[0], closest_pair[1])
+    nodes.difference_update(closest_pair)
+    nodes.add(new_node)
+    distance_matrix = update_matrix(distance_matrix, nodes, new_node)
+
+final_pair = list(nodes)
+v_i = (distance_matrix[final_pair[0]] + u_values[final_pair[0]] - u_values[final_pair[1]]) / 2
+v_j = (distance_matrix[final_pair[1]] + u_values[final_pair[1]] - u_values[final_pair[0]]) / 2
+
+# Output Newick format
+newick_format = f"(({final_pair[0][0]}:{v_i},{final_pair[0][1]}:{v_j}):10.25,{final_pair[1]}:10.25);"
+print("Newick format phylogenetic tree:")
+print(newick_format)
+This Python script follows the steps you've outlined:
+Calculates the Hamming distance between each pair of sequences.
+Constructs a distance matrix.
+Computes the average distance to all other tips.
+Calculates DIFF values and finds the smallest value.
+Updates the distance matrix by forming a new node.
+Repeats the process until only two nodes remain.
+Outputs the resulting phylogenetic tree in Newick format.
+Feel free to run this script and let me know if you have any questions or need any further adjustments!

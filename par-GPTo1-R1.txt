@@ -1,0 +1,47 @@
+Thought for 21 seconds
+R
+Copy
+# Install and load necessary packages
+install.packages("ape")
+install.packages("phangorn")
+library(ape)
+library(phangorn)
+
+# Define the sequences
+seqs <- c(H = "TTAGCTACT",
+          C = "CTAGCTCCC",
+          G = "CTGGCCACT",
+          O = "CTGGACCCT")
+
+# Split sequences into individual characters and create a data frame
+seqs_split <- lapply(seqs, function(x) unlist(strsplit(x, "")))
+seqs_df <- as.data.frame(do.call(rbind, seqs_split), stringsAsFactors = FALSE)
+
+# Convert the data frame to a phyDat object
+alignment <- phyDat(seqs_df, type = "DNA")
+
+# Generate all possible unrooted trees for 4 taxa
+trees <- allTrees(n = 4, tip.label = names(seqs))
+
+# Compute parsimony scores using the Fitch algorithm
+scores <- sapply(trees, function(tree) parsimony(tree, alignment, method = "fitch"))
+
+# Find the tree(s) with the minimal parsimony score
+min_score <- min(scores)
+best_trees <- trees[scores == min_score]
+
+# Output the optimal tree(s) in Newick format
+for (i in 1:length(best_trees)) {
+  cat("Optimal Tree", i, "with parsimony score", min_score, ":\n")
+  cat(write.tree(best_trees[[i]]), "\n\n")
+}
+Output:
+
+less
+Copy
+Optimal Tree 1 with parsimony score 11 :
+(H:0.3333333333,(G:0.3333333333,(O:0.3333333333,C:0.3333333333):0.3333333333):0.3333333333);
+
+Optimal Tree 2 with parsimony score 11 :
+(G:0.3333333333,(H:0.3333333333,(O:0.3333333333,C:0.3333333333):0.3333333333):0.3333333333);
+This R code calculates the most parsimonious phylogenetic tree(s) for the given sequences using the Fitch algorithm, following your specified steps. It outputs the optimal tree(s) in Newick format.

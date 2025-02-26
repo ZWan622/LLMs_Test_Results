@@ -1,0 +1,100 @@
+Below is a worked example of applying Fitch’s parsimony algorithm site-by-site to all three possible unrooted topologies for four taxa 
+𝐻
+,
+𝐶
+,
+𝐺
+,
+𝑂
+H,C,G,O. After tallying up the mutation steps for each topology, we will see which tree yields the minimum total number of steps.
+
+1. The Sequences
+We have four sequences (each of length 9):
+
+mathematica
+Copy
+H: T T A G C T A C T
+C: C T A G C T C C C
+G: C T G G C C A C T
+O: C T G G A C C C T
+Let’s label the sites from 1 to 9:
+
+Site	1	2	3	4	5	6	7	8	9
+H	T	T	A	G	C	T	A	C	T
+C	C	T	A	G	C	T	C	C	C
+G	C	T	G	G	C	C	A	C	T
+O	C	T	G	G	A	C	C	C	T
+2. Possible Unrooted Topologies with 4 Taxa
+For four taxa, there are exactly three distinct unrooted (fully resolved) topologies:
+
+Topologies to Evaluate:
+Topology 1: ((H, C), (G, O))
+Topology 2: ((H, G), (C, O))
+Topology 3: ((H, O), (C, G))
+General Steps of Fitch's Algorithm (for Each Site):
+Leaf Sets:
+Each leaf (taxon) is represented by the set of nucleotides at that site (e.g., {A}, {C}, {G}, {T}).
+
+Internal Node States:
+For each internal node, compute:
+
+Intersection of Child Sets:
+If the intersection is non-empty, the node's state is the intersection.
+Union of Child Sets:
+If the intersection is empty, the node's state becomes the union of the child sets, and a mutation step is added.
+Root Node State:
+Compute the root node’s state by comparing its child nodes' sets.
+
+Total Mutation Steps:
+Sum the mutation steps for each internal node across all sites.
+
+Example Application: Topology 1 (((H, C), (G, O)))
+Site-by-Site Analysis:
+Site 1 Example (Taxa: H=T, C=C, G=C, O=C):
+Node1 (H, C): {T} ∩ {C} = ∅ → {T, C}; +1 step
+Node2 (G, O): {C} ∩ {C} = {C}; +0 steps
+Root (Node1, Node2): {T, C} ∩ {C} = {C}; +0 steps
+Total for Site 1: 1 step
+Repeat for All Sites:
+Use the above steps for each site (site-specific nucleotide data provided earlier). Sum the mutation steps for all nodes.
+
+Summary Results for All Topologies:
+Topology 1 (((H, C), (G, O))): 7 steps
+Topology 2 (((H, G), (C, O))): 8 steps
+Topology 3 (((H, O), (C, G))): 9 steps
+Internal node:
+Compute the intersection of the sets of its two child nodes.
+If non-empty, that intersection is the set for the internal node (0 additional step).
+If empty, take the union of the child sets (1 additional step).
+Sum the “1-step” increments for each internal node on the path up to the root (or the final internal node in an unrooted tree).
+We then sum those steps across all sites (1–9). Whichever topology has the fewest total steps is the most parsimonious.
+
+Step 1: Evaluate Each Topology
+Topology 1:
+Tree structure: ((H, C), (G, O))
+
+Site-by-site analysis yields a total of 7 steps.
+Topology 2:
+Tree structure: ((H, G), (C, O))
+
+Site-by-site analysis yields a total of 8 steps.
+Topology 3:
+Tree structure: ((H, O), (C, G))
+
+Site-by-site analysis yields a total of 9 steps.
+Step 2: Select the Optimal Tree
+Topology 1 has the minimal parsimony cost of 7 steps, making it the most parsimonious tree.
+The structure of the optimal tree is:
+((H, C), (G, O)).
+Interpretation and Conclusion
+Parsimony Principle: The optimal tree is the one with the fewest mutation steps needed to explain the data.
+In this case, Topology 1 minimizes evolutionary changes across all sites.
+((H,C),(G,O)) is the most parsimonious unrooted tree under Fitch’s algorithm for these four sequences.
+
+4. Final Newick Format
+A simple Newick representation (without branch lengths) for the winning topology can be written as:
+
+mathematica
+Copy
+((H,C),(G,O));
+That is your most parsimonious phylogenetic tree for these sequences, following the Fitch algorithm steps you described.

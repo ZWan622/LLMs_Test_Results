@@ -1,0 +1,62 @@
+import numpy as np
+
+def calculate_q_matrix(dist_matrix):
+    r = len(dist_matrix)
+    q_matrix = np.zeros((r, r))
+    for i in range(r):
+        for j in range(r):
+            if i != j:
+                q_matrix[i, j] = (r - 2) * dist_matrix[i, j] - np.sum(dist_matrix[i]) - np.sum(dist_matrix[j])
+    return q_matrix
+
+def find_closest_neighbors(q_matrix):
+    min_val = np.min(q_matrix[np.nonzero(q_matrix)])
+    min_indices = np.where(q_matrix == min_val)
+    return min_indices[0][0], min_indices[1][0]
+
+def neighbor_joining(dist_matrix):
+    n = len(dist_matrix)
+    tree = {}
+
+    while n > 2:
+        q_matrix = calculate_q_matrix(dist_matrix)
+        i, j = find_closest_neighbors(q_matrix)
+
+        new_node = f'node_{n}'
+        tree[new_node] = [
+            (f'taxon_{i}', dist_matrix[i, j] / 2),
+            (f'taxon_{j}', dist_matrix[i, j] / 2)
+        ]
+
+        # Update the distance matrix
+        dist_matrix = (dist_matrix + dist_matrix[:, [i]] + dist_matrix[:, [j]]) / 2
+        dist_matrix = np.delete(np.delete(dist_matrix, i, 0), j, 1)
+
+        n -= 1
+
+    tree['root'] = [
+        (f'taxon_0', dist_matrix[0, 1]),
+        (f'taxon_1', dist_matrix[0, 1])
+    ]
+    return tree
+
+# Example usage:
+distance_matrix = np.array([[0, 5, 9, 9],
+                            [5, 0, 10, 10],
+                            [9, 10, 0, 8],
+                            [9, 10, 8, 0]])
+
+nj_tree = neighbor_joining(distance_matrix)
+print(nj_tree)
+Key Highlights:
+Functions:
+
+calculate_q_matrix: Calculates the Q-matrix from the distance matrix.
+find_closest_neighbors: Finds the indices of the closest pair in the Q-matrix.
+neighbor_joining: Implements the Neighbor Joining algorithm step-by-step to construct the phylogenetic tree.
+Example Distance Matrix:
+
+A symmetric matrix representing distances between four taxa.
+Tree Representation:
+
+The resulting tree dictionary holds the hierarchical structure of the phylogenetic tree.

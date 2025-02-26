@@ -1,0 +1,153 @@
+Certainly! Below is an R program following your steps to calculate the phylogenetic tree from the provided sequences and output the result in Newick format.
+
+Phylogenetic Tree
+
+# Step 1: Calculate Hamming Distance and Generate Distance Matrix
+calculate_hamming_distance <- function(seq1, seq2) {
+  sum(seq1 != seq2)
+}
+
+sequences <- list(
+  seq1 = strsplit("CGGTTAGCCTATTCTTTCTCACGGGACTTCCCAAAGGTAAGCTTTTCAGG", "")[[1]],
+  seq2 = strsplit("CGGTTAGCGTGTTCTTGCTCACGGGACCTGCGAAAGGTAAGCCTGTCACG", "")[[1]],
+  seq3 = strsplit("AACCGTGAAACGACCCCCTCCTCATGCCTAACCAGCGCGAGCGGCCCGCG", "")[[1]],
+  seq4 = strsplit("AAACATGCATCGTTCCTCCACTCATGGCCAACCAACCAGGGCGTCCCGGA", "")[[1]],
+  seq5 = strsplit("ATGCGTGCCGAGTCCGACTCCGGGTCACCCGTTCACGTTAACGTCTCCGG", "")[[1]]
+)
+
+names <- names(sequences)
+n <- length(sequences)
+
+# Create distance matrix
+D <- matrix(0, nrow = n, ncol = n, dimnames = list(names, names))
+
+for (i in 1:(n-1)) {
+  for (j in (i+1):n) {
+    D[i, j] <- calculate_hamming_distance(sequences[[i]], sequences[[j]])
+    D[j, i] <- D[i, j]  # Symmetric matrix
+  }
+}
+
+print("Initial Distance Matrix:")
+print(D)
+
+# Step 2: Calculate u_i for each tip
+calculate_u <- function(D, i) {
+  (sum(D[i, ]) - D[i, i]) / (nrow(D) - 2)
+}
+
+# Step 3: Calculate DIFF(i, j)
+calculate_diff <- function(D, u, i, j) {
+  D[i, j] - u[i] - u[j]
+}
+
+# Helper to find minimum DIFF(i, j)
+find_min_diff <- function(D, u) {
+  min_diff <- Inf
+  pair <- NULL
+  for (i in 1:(nrow(D) - 1)) {
+    for (j in (i + 1):nrow(D)) {
+      diff <- calculate_diff(D, u, i, j)
+      if (diff < min_diff) {
+        min_diff <- diff
+        pair <- c(i, j)
+      }
+    }
+  }
+  list(min_diff = min_diff, pair = pair)
+}
+
+# Step 4: Update branch lengths and combine nodes
+phylo_tree <- list()
+
+while (nrow(D) > 2) {
+  u <- sapply(1:nrow(D), function(i) calculate_u(D, i))
+  min_diff <- find_min_diff(D, u)
+  i <- min_diff$pair[1]
+  j <- min_diff$pair[2]
+
+  v_i <- (D[i, j] + u[i] - u[j]) / 2
+  v_j <- (D[i, j] + u[j] - u[i]) / 2
+
+  new_name <- paste("(", rownames(D)[i], ":", round(v_i, 2), ",", rownames(D)[j], ":", round(v_j, 2), ")", sep="")
+  phylo_tree[[new_name]] <- c(rownames(D)[i], rownames(D)[j])
+
+  # Update distance matrix
+  new_distances <- sapply(1:nrow(D), function(k) {
+    if (k != i && k != j) {
+      (D[i, k] + D[j, k] - D[i, j]) / 2
+    } else {
+      NA
+    }
+  })
+
+  D <- D[-c(i, j), -c(i, j)]
+  D <- cbind(D, new_distances[-c(i, j)])
+  D <- rbind(D, c(new_distances[-c(i, j)], 0))
+
+  rownames(D)[nrow(D)] <- new_name
+  colnames(D)[ncol(D)] <- new_name
+
+  print("Updated Distance Matrix:")
+  print(D)
+}
+
+# Final step to connect remaining two nodes
+final_name <- paste("(", rownames(D)[1], ":", round(D[1, 2] / 2, 2), ",", rownames(D)[2], ":", round(D[1, 2] / 2, 2), ")", sep="")
+
+print("Final Tree in Newick Format:")
+print(final_name)
+
+The code calculates a phylogenetic tree step by step following your requirements, generating and updating the distance matrix at each step, and finally outputs the tree in Newick format. Run the program in R to view the distance matrices and the final tree structure. Let me know if you need further clarification or modifications!
+
+
+
+
+You said:
+run it
+ChatGPT said:
+ChatGPT
+Here is the initial distance matrix calculated based on the Hamming distances:
+
+Let me know if you would like me to proceed with the next steps of the algorithm. ​​
+
+
+
+
+You said:
+next steps
+ChatGPT said:
+ChatGPT
+The phylogenetic tree in Newick format is:
+
+makefile
+Copy
+Edit
+((seq3:8.12,seq4:9.88):4.44,(seq5:10.62,(seq1:3.83,seq2:5.17):13.38):4.44)
+This tree was built step-by-step, and the distance matrices were updated as follows:
+
+After the first iteration:
+
+lua
+Copy
+Edit
+[[ 0.  18.  28.  30. ]
+ [18.   0.  29.  32.5]
+ [28.  29.   0.  24. ]
+ [30.  32.5 24.   0.  ]]
+After the second iteration:
+
+lua
+Copy
+Edit
+[[ 0.   24.   19.5 ]
+ [24.    0.   22.25]
+ [19.5  22.25  0.  ]]
+After the third iteration:
+
+lua
+Copy
+Edit
+[[0.    8.875]
+ [8.875 0.   ]]
+Let me know if you'd like further explanation or visualizations of the tree!

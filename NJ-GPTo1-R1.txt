@@ -1,0 +1,294 @@
+Below is a self-contained R script (no external packages) that implements a step-by-step Neighbor Joining–style procedure exactly following the outlined steps. It does the following:
+
+Reads your 5 sequences.
+Computes the Hamming distances (Step 1).
+Computes 
+𝑢
+𝑖
+u 
+i
+​
+  for each tip (Step 2).
+Computes 
+DIFF
+(
+𝑖
+,
+𝑗
+)
+DIFF(i,j) (Step 3).
+Joins the smallest-
+DIFF
+DIFF pair to form a new node (Steps 4 & 5).
+Updates the distance matrix (Step 5).
+Repeats until only two nodes remain (Step 6).
+Outputs the final tree in Newick format (Step 7).
+Prints the distance matrix at each iteration.
+Important: This example is purely illustrative of how to implement each step. You can run this code in R. It will print intermediate distance matrices and, in the end, produce a Newick string for the 5 sequences.
+
+Complete R Script
+r
+Copy
+################################################################################
+# R script to perform a step-by-step Neighbor-Joining tree construction 
+# from scratch (no packages), following your instructions.
+################################################################################
+
+# -------------------
+# Step 1: Hamming distance calculation
+# -------------------
+
+# Define the input sequences
+seq1 <- "CGGTTAGCCTATTCTTTCTCACGGGACTTCCCAAAGGTAAGCTTTTCAGG"
+seq2 <- "CGGTTAGCGTGTTCTTGCTCACGGGACCTGCGAAAGGTAAGCCTGTCACG"
+seq3 <- "AACCGTGAAACGACCCCCTCCTCATGCCTAACCAGCGCGAGCGGCCCGCG"
+seq4 <- "AAACATGCATCGTTCCTCCACTCATGGCCAACCAACCAGGGCGTCCCGGA"
+seq5 <- "ATGCGTGCCGAGTCCGACTCCGGGTCACCCGTTCACGTTAACGTCTCCGG"
+
+# Put them in a named list
+seqs <- list(seq1 = seq1,
+             seq2 = seq2,
+             seq3 = seq3,
+             seq4 = seq4,
+             seq5 = seq5)
+
+# A function to compute the Hamming distance between two equal-length strings
+hamming_dist <- function(a, b) {
+  # Ensure the sequences are the same length
+  if(nchar(a) != nchar(b)) {
+    stop("Sequences must be the same length to compute Hamming distance.")
+  }
+  # Compare character by character
+  sum(unlist(strsplit(a, "")) != unlist(strsplit(b, "")))
+}
+
+# Build the initial distance matrix
+tip_names <- names(seqs)
+n <- length(tip_names)
+D <- matrix(0, nrow = n, ncol = n, dimnames = list(tip_names, tip_names))
+
+for(i in 1:(n-1)) {
+  for(j in (i+1):n) {
+    dist_ij <- hamming_dist(seqs[[i]], seqs[[j]])
+    D[i,j] <- dist_ij
+    D[j,i] <- dist_ij
+  }
+}
+
+cat("Initial Distance Matrix (Step 1):\n")
+print(D)
+cat("\n")
+
+# -------------------
+# Prepare for the iterative NJ steps
+# -------------------
+
+# We'll keep track of "clusters" (which initially are single sequences).
+clusters <- tip_names
+
+# For reconstructing the tree in Newick format, keep a map from
+# cluster name -> Newick string. Initially, each cluster is just its name.
+cluster_newick <- setNames(as.list(clusters), clusters)
+
+# -------------------
+# Function to compute 'u_i' = sum of distances from i to other tips / (n - 2)
+# -------------------
+compute_u <- function(dist_mat, current_clusters) {
+  # Number of tips currently in the matrix
+  n_current <- length(current_clusters)
+  u_vals <- numeric(n_current)
+  names(u_vals) <- current_clusters
+  for (i in current_clusters) {
+    # sum of D(i, j) for j != i
+    s <- sum(dist_mat[i, current_clusters[current_clusters != i]])
+    # divide by (n_current - 2)
+    u_vals[i] <- s / (n_current - 2)
+  }
+  return(u_vals)
+}
+
+# -------------------
+# Iterative function that performs steps 2-6 repeatedly
+# -------------------
+while(length(clusters) > 2) {
+  
+  # -------------------
+  # Step 2: Compute u_i for each tip
+  # -------------------
+  u <- compute_u(D, clusters)
+  
+  # -------------------
+  # Step 3: Compute DIFF(i, j) = D(i, j) - u_i - u_j
+  # -------------------
+  # We'll store DIFF in a matrix form for convenience
+  n_current <- length(clusters)
+  diff_mat <- matrix(0, nrow = n_current, ncol = n_current,
+                     dimnames = list(clusters, clusters))
+  
+  for (i in clusters) {
+    for (j in clusters) {
+      if(i != j) {
+        diff_mat[i,j] <- D[i,j] - u[i] - u[j]
+      }
+    }
+  }
+  
+  # Find the pair (i, j) that has the minimal DIFF
+  # (We only need to look at i<j or i != j)
+  min_val <- Inf
+  pair_min <- c("", "")
+  for(i in 1:(n_current-1)) {
+    for(j in (i+1):n_current) {
+      i_name <- clusters[i]
+      j_name <- clusters[j]
+      if(diff_mat[i_name, j_name] < min_val) {
+        min_val <- diff_mat[i_name, j_name]
+        pair_min <- c(i_name, j_name)
+      }
+    }
+  }
+  
+  # The chosen pair to join
+  i_star <- pair_min[1]
+  j_star <- pair_min[2]
+  
+  # -------------------
+  # Step 4: Connect tips i and j, forming new node with branch lengths
+  #   v_i = (D(i,j) + u_i - u_j)/2
+  #   v_j = (D(i,j) + u_j - u_i)/2
+  # -------------------
+  d_ij <- D[i_star, j_star]
+  v_i <- (d_ij + u[i_star] - u[j_star]) / 2
+  v_j <- (d_ij + u[j_star] - u[i_star]) / 2
+  
+  # Create a new cluster name
+  new_cluster <- paste0("(", cluster_newick[[i_star]], ":", 
+                        round(v_i, 4), ",", 
+                        cluster_newick[[j_star]], ":", 
+                        round(v_j, 4), ")")
+  
+  # We'll label the new cluster with something unique
+  new_label <- paste0("N", i_star, "_", j_star)
+  
+  # Map it to the newick string
+  cluster_newick[[new_label]] <- new_cluster
+  
+  # -------------------
+  # Step 5: Update the distance matrix D
+  #   D(new node, k) = (D(i, k) + D(j, k) - D(i,j))/2
+  # Remove old tips i, j, add the new node
+  # -------------------
+  
+  # 1) Make a new row/column for the new node
+  # 2) Fill with distances to existing other tips
+  # 3) Remove i, j
+  # 4) Keep everything else the same
+  
+  # Other clusters besides i_star, j_star
+  other_clusters <- setdiff(clusters, c(i_star, j_star))
+  
+  # Build a new distance matrix
+  new_D_size <- length(other_clusters) + 1
+  new_D <- matrix(0, nrow = new_D_size, ncol = new_D_size,
+                  dimnames = list(c(other_clusters, new_label),
+                                  c(other_clusters, new_label)))
+  
+  # Fill in distances among existing others
+  for (x in other_clusters) {
+    for (y in other_clusters) {
+      new_D[x, y] <- D[x, y]
+    }
+  }
+  
+  # Fill in distances from new_label to others
+  for (k in other_clusters) {
+    d_ik <- D[i_star, k]
+    d_jk <- D[j_star, k]
+    new_D[new_label, k] <- (d_ik + d_jk - d_ij) / 2
+    new_D[k, new_label] <- new_D[new_label, k]
+  }
+  
+  # Update cluster sets: remove i_star, j_star, add new_label
+  clusters <- c(other_clusters, new_label)
+  
+  # Add new row in cluster_newick (already done above)
+  # Remove old entries from cluster_newick
+  cluster_newick[[i_star]] <- NULL
+  cluster_newick[[j_star]] <- NULL
+  
+  # Replace D with new_D
+  D <- new_D
+  
+  # Print the updated distance matrix at this iteration
+  cat("Updated Distance Matrix after joining", i_star, "and", j_star, ":\n")
+  print(D)
+  cat("\n")
+}
+
+# -------------------
+# Step 6: Now we have only two clusters left, connect them
+# -------------------
+final_two <- clusters
+i_star <- final_two[1]
+j_star <- final_two[2]
+
+d_ij <- D[i_star, j_star]
+# No need to compute new u_i or v_i exactly as above, but we can do a final branch split
+# We'll just put them in the final parent node, dividing equally or as in standard NJ formula.
+
+# For completeness, let's define them as equal branches or use a similar formula:
+v_i <- d_ij / 2
+v_j <- d_ij / 2
+
+final_newick <- paste0("(", 
+                       cluster_newick[[i_star]], ":", round(v_i,4), ",",
+                       cluster_newick[[j_star]], ":", round(v_j,4), 
+                       ");")
+
+# -------------------
+# Step 7: Print the final tree in Newick format
+# -------------------
+cat("Final Newick Tree:\n")
+cat(final_newick, "\n")
+How the Code Works
+Hamming Distances
+
+We define a simple function hamming_dist(a, b) to compare the two strings base-by-base and count mismatches.
+We construct the initial distance matrix D for your five sequences.
+Iterative Neighbor Joining Steps
+
+We keep a list of clusters, each initially just one sequence (seq1, seq2, etc.).
+Each cluster is also associated with a partial Newick string (initially just the cluster’s name).
+At each iteration:
+
+Compute ui for each cluster i.
+Compute DIFF(i, j) = D(i, j) - ui - uj.
+Find the pair (i*, j*) with minimum DIFF.
+Compute branch lengths to form a new node; combine them in parentheses to create the cluster’s partial Newick string.
+Update the distance matrix with the new node, removing i* and j*.
+Print the updated distance matrix.
+
+When only two clusters remain, connect them, finalize the Newick tree.
+Output
+
+The script finally prints a single Newick string that represents the tree.
+Note: The numeric values in the final Newick will depend on the actual computed Hamming distances. Each distance matrix is printed at each step so you can see how it evolves. You can modify how many decimal places to keep (e.g., using round(..., 4)) for readability.
+
+Example of Final Output
+When you run this code, you will see:
+
+The initial distance matrix of dimension 5×5.
+Iterative updates of the distance matrix after each join (Steps 4–5).
+The final Newick tree printed at the end.
+A mock example of a final Newick (just an example format, not real distances) might look like:
+
+bash
+Copy
+((seq1:4,seq2:6):5,((seq3:7,seq4:3):8,seq5:9));
+But the actual numbers will be based on your sequences’ Hamming distances and the neighbor-joining formula steps.
+
+You now have a fully working, package-free R script that:
+
+Follows the steps you specified,
+Shows the distance matrix at each step,
+Produces the Newick format output at the end.

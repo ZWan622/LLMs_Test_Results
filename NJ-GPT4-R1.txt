@@ -1,0 +1,96 @@
+Sure, I can help you with an R script that implements the described steps to calculate the phylogenetic tree from the sequence data, including calculating Hamming distances, average distances, differential distances, and then using these to progressively build the tree. This script will be written without the use of specialized packages, following your outlined steps.
+
+Here is the complete R code:
+
+r
+Copy
+# Step 1: Function to calculate Hamming distance
+hamming_distance <- function(seq1, seq2) {
+  sum(charToRaw(seq1) != charToRaw(seq2))
+}
+
+# Initial sequences
+sequences <- list(
+  seq1 = "CGGTTAGCCTATTCTTTCTCACGGGACTTCCCAAAGGTAAGCTTTTCAGG",
+  seq2 = "CGGTTAGCGTGTTCTTGCTCACGGGACCTGCGAAAGGTAAGCCTGTCACG",
+  seq3 = "AACCGTGAAACGACCCCCTCCTCATGCCTAACCAGCGCGAGCGGCCCGCG",
+  seq4 = "AAACATGCATCGTTCCTCCACTCATGGCCAACCAACCAGGGCGTCCCGGA",
+  seq5 = "ATGCGTGCCGAGTCCGACTCCGGGTCACCCGTTCACGTTAACGTCTCCGG"
+)
+
+# Create distance matrix
+n <- length(sequences)
+distance_matrix <- matrix(nrow = n, ncol = n)
+names <- names(sequences)
+
+# Fill distance matrix
+for (i in 1:n) {
+  for (j in 1:n) {
+    if (i == j) {
+      distance_matrix[i, j] <- 0
+    } else {
+      distance_matrix[i, j] <- hamming_distance(sequences[[i]], sequences[[j]])
+    }
+  }
+}
+rownames(distance_matrix) <- names
+colnames(distance_matrix) <- names
+
+print("Initial Distance Matrix:")
+print(distance_matrix)
+
+# Step 2-7: UPGMA algorithm implementation
+while (n > 2) {
+  # Compute u_i for each tip
+  u <- apply(distance_matrix, 1, sum) / (n - 2)
+  
+  # Compute DIFF matrix
+  diff_matrix <- matrix(nrow = n, ncol = n)
+  for (i in 1:n) {
+    for (j in 1:n) {
+      if (i != j) {
+        diff_matrix[i, j] <- distance_matrix[i, j] - u[i] - u[j]
+      } else {
+        diff_matrix[i, j] <- Inf
+      }
+    }
+  }
+  
+  # Find the minimum DIFF
+  min_diff <- which(diff_matrix == min(diff_matrix), arr.ind = TRUE)
+  i <- min_diff[1, 1]
+  j <- min_diff[1, 2]
+  
+  # Compute branch lengths v_i and v_j
+  v_i <- (distance_matrix[i, j] + u[i] - u[j]) / 2
+  v_j <- (distance_matrix[i, j] + u[j] - u[i]) / 2
+  
+  # New node label
+  new_node <- paste("(", names[i], ":", sprintf("%.1f", v_i), ",", names[j], ":", sprintf("%.1f", v_j), ")", sep = "")
+  remaining <- setdiff(1:n, c(i, j))
+  
+  # Update the distance matrix
+  new_distances <- (distance_matrix[i, remaining] + distance_matrix[j, remaining] - distance_matrix[i, j]) / 2
+  new_matrix <- distance_matrix[remaining, remaining]
+  new_matrix <- rbind(new_matrix, new_distances)
+  new_matrix <- cbind(new_matrix, c(new_distances, 0))
+  rownames(new_matrix) <- c(names[remaining], new_node)
+  colnames(new_matrix) <- c(names[remaining], new_node)
+  names <- c(names[remaining], new_node)
+  distance_matrix <- new_matrix
+  n <- n - 1
+  
+  print(paste("Updated Distance Matrix with", names[n], "as new node:"))
+  print(distance_matrix)
+}
+
+# Final step with two remaining tips
+final_node <- paste("(", names[1], ":", sprintf("%.1f", distance_matrix[1, 2] / 2), ",", names[2], ":", sprintf("%.1f", distance_matrix[1, 2] / 2), ")", sep = "")
+newick_format <- paste(final_node, ";", sep = "")
+print("Final Newick Format:")
+print(newick_format)
+Explanation
+Hamming Distance Calculation: A function calculates the Hamming distance between any two given sequences.
+Initial Distance Matrix: This matrix is constructed using the provided sequences.
+UPGMA Algorithm Implementation: The script implements a variant of UPGMA (Unweighted Pair Group Method with Arithmetic Mean) without using any specific phylogenetic package. This involves calculating average distances, minimum DIFF, and updating distance matrices iteratively until a Newick format tree is constructed.
+You can run this script in any R environment to obtain the phylogenetic tree based on your data and algorithmic steps.

@@ -1,0 +1,5 @@
+It seems that the Biopython library is not installed in this environment, which is required for creating the phylogenetic tree. You can install Biopython in your local Python environment by running the following command:
+
+bash   CopyEdit
+pip install biopython
+Once installed, you can use the code I provided to generate the phylogenetic tree. Let me know if you'd like me to provide any additional guidance or adjustments! ​

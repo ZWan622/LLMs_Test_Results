@@ -1,0 +1,19 @@
+
+
+Hamming Distance Matrix:
+seq1	seq2	seq3	seq4
+seq1	-	12	49	50
+seq2	12	-	49	53
+seq3	49	49	-	50
+seq4	50	53	50	-
+Modified Distance Matrix (Q):
+seq1	seq2	seq3	seq4
+seq1	-	-39	-202	-207
+seq2	-39	-	-202	-214
+seq3	-202	-202	-	-207
+seq4	-207	-214	-207	-
+Process Details:
+The least distant pair in the Q matrix is identified as seq1 and seq2 with a Q value of -39.
+The next step involves creating an internal node that represents the common ancestor of seq1 and seq2.
+Following this, the distance matrix should be updated recursively as the algorithm progresses.
+Would you like assistance with implementing the next steps of this algorithm, such as updating the distance matrix or calculating new cluster distances? Let me know how you'd like to proceed!

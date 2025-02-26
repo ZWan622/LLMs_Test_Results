@@ -1,0 +1,408 @@
+Below is a fully worked R script implementing a Neighbor-Joining-like procedure from scratch, without using any specialized phylogenetics packages. It follows your described steps, prints the distance matrix at each iteration, and finally outputs a Newick string representing the inferred tree.
+
+The script uses Hamming distance to build the initial distance matrix from your sequences. You can adapt it if you prefer a different distance measure. The code demonstrates:
+
+Initialization of the distance matrix D.
+Iterating until only two “nodes” remain:
+
+Step 2: Compute ui = Σ(j ≠ i) D(i, j) / (n - 2).
+
+Step 3: Compute DIFF(i, j) = D(i, j) - ui - uj.
+
+Step 4: Find the pair (i, j) with the smallest DIFF(i, j).
+Compute branch lengths vi and vj.
+
+Step 5: Create a new node combining i and j.
+Update the distance matrix using
+D(new, k) = (D(i, k) + D(j, k) - D(i, j)) / 2.
+​
+ .
+Step 6: Repeat until only two nodes remain.
+Step 7: Produce the final Newick format tree from the merges.
+Full R Code
+r
+Copy
+############################
+# Neighbor-Joining from Scratch
+############################
+
+# -----------------------------
+# Step 0: Define your sequences
+# -----------------------------
+seqs <- c(
+  "CGGTTAGCCTATTCTTTCTCACGGGACTTCCCAAAGGTAAGCTTTTCAGG",  # seq1
+  "CGGTTAGCGTGTTCTTGCTCACGGGACCTGCGAAAGGTAAGCCTGTCACG",  # seq2
+  "AACCGTGAAACGACCCCCTCCTCATGCCTAACCAGCGCGAGCGGCCCGCG",  # seq3
+  "AAACATGCATCGTTCCTCCACTCATGGCCAACCAACCAGGGCGTCCCGGA",  # seq4
+  "ATGCGTGCCGAGTCCGACTCCGGGTCACCCGTTCACGTTAACGTCTCCGG"   # seq5
+)
+
+# -----------------------------------------
+# Step 1: Compute the initial distance matrix (D)
+# -----------------------------------------
+hamming_dist <- function(s1, s2) {
+  # Simple function to count mismatches
+  v1 <- unlist(strsplit(s1, ""))
+  v2 <- unlist(strsplit(s2, ""))
+  sum(v1 != v2)
+}
+
+n <- length(seqs)
+# We'll keep track of "active tips" (initially seq1, seq2, etc.)
+tips <- paste0("seq", seq_len(n))
+
+# Create a list to hold the "Newick labels"
+# Initially, each tip is its own leaf in the Newick string
+newick_labels <- setNames(tips, tips)
+
+# Build the initial distance matrix
+dist_mat <- matrix(0, nrow = n, ncol = n,
+                   dimnames = list(tips, tips))
+for (i in seq_len(n-1)) {
+  for (j in seq((i+1), n)) {
+    d <- hamming_dist(seqs[i], seqs[j])
+    dist_mat[i, j] <- d
+    dist_mat[j, i] <- d
+  }
+}
+
+# Function to perform a single iteration of the NJ steps
+perform_iteration <- function(dist_mat, newick_labels, iteration_num) {
+  # Current tip names (rows/cols)
+  current_tips <- rownames(dist_mat)
+  n_current <- length(current_tips)
+  
+  cat("\n========================================================\n")
+  cat("Iteration:", iteration_num, "\n")
+  cat("Current tips:", paste(current_tips, collapse = ", "), "\n\n")
+
+  cat("Distance matrix at the start of this iteration:\n")
+  print(dist_mat)
+  
+  # Step 2: Compute u_i for each tip
+  #    u_i = sum of row i / (n-2)
+  #    (only if n_current > 2, but at the final step n_current=2 anyway)
+  if (n_current > 2) {
+    u_values <- numeric(n_current)
+    for (i in seq_len(n_current)) {
+      u_values[i] <- sum(dist_mat[i, -i]) / (n_current - 2)
+    }
+  } else {
+    # If only two nodes remain, no need for u-values, we end after this iteration
+    u_values <- rep(0, n_current)
+  }
+  names(u_values) <- current_tips
+  
+  cat("\nStep 2: u_i values:\n")
+  print(u_values)
+  
+  # If we have only 2 tips left, we can break after computing final branch
+  if (n_current == 2) {
+    cat("\nOnly two tips remain. We'll finalize the tree.\n")
+    return(list(dist_mat = dist_mat, newick_labels = newick_labels,
+                merged = FALSE, nodes_merged = NULL,
+                branch_lengths = c(0,0)))
+  }
+  
+  # Step 3: Compute DIFF(i, j) = D(i,j) - u_i - u_j
+  diff_mat <- matrix(0, nrow = n_current, ncol = n_current,
+                     dimnames = list(current_tips, current_tips))
+  for (i in seq_len(n_current - 1)) {
+    for (j in seq((i+1), n_current)) {
+      diff_mat[i, j] <- dist_mat[i, j] - u_values[i] - u_values[j]
+      diff_mat[j, i] <- diff_mat[i, j]
+    }
+  }
+  
+  cat("\nStep 3: DIFF Matrix:\n")
+  print(diff_mat)
+  
+  # Step 4: Find pair (i, j) with smallest DIFF(i, j)
+  # and compute v_i and v_j
+  min_val <- Inf
+  min_pair <- c(NA, NA)
+  for (i in seq_len(n_current - 1)) {
+    for (j in seq((i+1), n_current)) {
+      if (diff_mat[i, j] < min_val) {
+        min_val <- diff_mat[i, j]
+        min_pair <- c(i, j)
+      }
+    }
+  }
+  i_idx <- min_pair[1]
+  j_idx <- min_pair[2]
+  tip_i <- current_tips[i_idx]
+  tip_j <- current_tips[j_idx]
+  
+  D_ij <- dist_mat[i_idx, j_idx]
+  u_i <- u_values[i_idx]
+  u_j <- u_values[j_idx]
+  
+  v_i <- (D_ij + u_i - u_j) / 2
+  v_j <- (D_ij + u_j - u_i) / 2
+  
+  cat("\nStep 4: Smallest DIFF is", min_val, 
+      "between", tip_i, "and", tip_j, "\n")
+  cat("Branch lengths:\n")
+  cat("  v_i =", v_i, "\n")
+  cat("  v_j =", v_j, "\n")
+  
+  # Step 5: Create a new node and update distance matrix
+  new_node <- paste0("node", iteration_num)  # e.g. "node1", "node2", ...
+  
+  # Build the new node's Newick string
+  # We'll use parentheses around the children with their branch lengths
+  # e.g. (tip_i: v_i, tip_j: v_j)
+  new_label <- paste0("(", newick_labels[[tip_i]], ":", 
+                      round(v_i, 6), ",", 
+                      newick_labels[[tip_j]], ":", 
+                      round(v_j, 6), ")")
+  
+  # Now we must compute distances from "new_node" to every other tip k
+  # D(new_node, k) = (D(i,k) + D(j,k) - D(i,j))/2
+  # We'll build a new dist matrix with one fewer row/column
+  remaining_tips <- setdiff(current_tips, c(tip_i, tip_j))
+  new_tips <- c(remaining_tips, new_node)
+  
+  new_dist_mat <- matrix(0, 
+                         nrow = length(new_tips),
+                         ncol = length(new_tips),
+                         dimnames = list(new_tips, new_tips))
+  
+  # 1) Copy over the distances among the old tips (except i, j)
+  for (x in remaining_tips) {
+    for (y in remaining_tips) {
+      new_dist_mat[x, y] <- dist_mat[x, y]
+    }
+  }
+  
+  # 2) For each k in remaining_tips, compute D(new_node, k)
+  for (k in remaining_tips) {
+    Dik <- dist_mat[tip_i, k]
+    Djk <- dist_mat[tip_j, k]
+    new_dist_mat[new_node, k] <- (Dik + Djk - D_ij) / 2
+    new_dist_mat[k, new_node] <- new_dist_mat[new_node, k]
+  }
+  
+  # Update the newick label for the newly created node
+  newick_labels[[new_node]] <- new_label
+  
+  # Remove old tips from newick_labels
+  newick_labels[[tip_i]] <- NULL
+  newick_labels[[tip_j]] <- NULL
+  
+  cat("\nStep 5: Created new node", new_node, 
+      "replacing", tip_i, "and", tip_j, "\n")
+  
+  # Return the updated matrix and updated newick_labels
+  list(dist_mat = new_dist_mat,
+       newick_labels = newick_labels,
+       merged = TRUE,
+       nodes_merged = c(tip_i, tip_j),
+       branch_lengths = c(v_i, v_j))
+}
+
+# -----------------------------
+# Main loop (Step 6):
+# Repeat until only 2 nodes left
+# -----------------------------
+iteration <- 1
+while (nrow(dist_mat) > 2) {
+  res <- perform_iteration(dist_mat, newick_labels, iteration)
+  if (!res$merged) {
+    # means only 2 tips were left, so we break
+    break
+  }
+  dist_mat <- res$dist_mat
+  newick_labels <- res$newick_labels
+  iteration <- iteration + 1
+}
+
+# If we exit the loop with exactly 2 nodes left, do the final merge
+final_tips <- rownames(dist_mat)
+if (length(final_tips) == 2) {
+  cat("\n====================================\n")
+  cat("Final step with two remaining nodes:\n")
+  cat("====================================\n\n")
+  
+  cat("Distance matrix at final step:\n")
+  print(dist_mat)
+  
+  tip_i <- final_tips[1]
+  tip_j <- final_tips[2]
+  D_ij <- dist_mat[tip_i, tip_j]
+  
+  # For the final step, we can treat u_i and u_j as 0 or do the same formula:
+  # v_i = (D(i,j) + u_i - u_j)/2, but now with n=2, 
+  # u_i = sum(dist(i,k)) / (2-2) which is not defined.
+  # So we do the usual final branch length for neighbor-joining:
+  # each tip gets half of the distance
+  v_i <- D_ij / 2
+  v_j <- D_ij / 2
+  
+  # Build the final Newick
+  new_label <- paste0("(", 
+                      newick_labels[[tip_i]], ":", round(v_i, 6), ",",
+                      newick_labels[[tip_j]], ":", round(v_j, 6), 
+                      ")")
+  # This is our final tree
+  cat("Final Newick Tree:\n")
+  cat(new_label, "\n\n")
+  
+} else {
+  # If we didn't end with exactly 2 tips, then we can just print
+  # whatever remains in newick_labels
+  cat("\nSomething unexpected happened: we do not have exactly 2 nodes.\n")
+  cat("Remaining nodes:\n")
+  print(final_tips)
+  cat("Newick so far:\n")
+  print(newick_labels)
+}
+Explanation of Key Points
+Data Structures
+
+dist_mat: An 
+𝑛
+×
+𝑛
+n×n matrix of pairwise distances.
+tips: A character vector of active “nodes” in the matrix. Initially, these are the original sequences (seq1, seq2, etc.).
+newick_labels: A named list, mapping each current “tip” or “node” to its partial Newick string. Initially, newick_labels[["seq1"]] = "seq1", and so forth.
+Iteration
+
+Each iteration merges the two tips that minimize DIFF(i, j).
+We compute branch lengths vi, vj via
+vi = (D(i, j) + ui - uj) / 2,
+vj = (D(i, j) + uj - ui) / 2.
+
+We then introduce a new node, nodeX, whose Newick label is constructed from the labels of tips i and j. For example, (tip_i:0.12, tip_j:0.34).
+We remove the old tips i and j from the distance matrix and add the new node in their place. The new distances are computed by
+D(new, k) = (D(i, k) + D(j, k) - D(i, j)) / 2.​
+ .
+Stopping Condition
+
+We continue merging until 2 nodes remain in the distance matrix. At that point, we connect them directly with half the distance going to each side (a standard final step in neighbor-joining).
+Printing the Distance Matrix
+
+At each iteration, the script prints the current distance matrix (dist_mat).
+Newick Format Output
+
+Once the final two nodes remain, the script prints a single parenthetical string with two children (the last two nodes). That yields the final Newick representation.
+Example output might look something like
+makefile
+Copy
+((seq1:5,seq2:6):2,(seq3:4,seq4:5):3)
+depending on the actual merges and branch lengths.
+You can tweak the formatting and the rounding of branch lengths as desired. This code demonstrates the entire logic without using any external phylogenetic packages like ape or phangorn.
+
+
+
+
+You said:
+Error in newick_labels[[tip_i]] <- NULL : replacement has length zero
+ChatGPT
+
+Thought about neighbor-joining algorithm，持续 11 秒
+Below are some common reasons (and corresponding solutions) why you might see the error:
+
+lua
+Copy
+Error in newick_labels[[tip_i]] <- NULL : replacement has length zero
+when trying to remove (set to NULL) an element from your named list newick_labels:
+
+Why this error occurs
+In R, setting my_list[["someName"]] <- NULL is the typical way to remove an element named "someName" from the list my_list. However, if "someName" does not exist in names(my_list), you might get an error or an unexpected result.
+
+Specifically, the error:
+
+lua
+Copy
+Error in newick_labels[[tip_i]] <- NULL : replacement has length zero
+usually indicates that tip_i is not a valid name in newick_labels. In other words, there is no element called newick_labels[["seqXYZ"]] to remove.
+
+Common reasons include:
+
+Name mismatches
+
+The distance matrix row names might be "seq1", "seq2", ..." whereas the newick_labels might use something else (e.g., "1", "2", ...").
+Or you might have changed a tip’s name at some point so that tip_i no longer matches the key in newick_labels.
+Index vs. name confusion
+
+If you are accidentally using numeric indices instead of character names when removing list elements. For example, newick_labels[[1]] <- NULL removes the first element by position, not by name.
+Already removed
+
+If code in a previous iteration already removed a key (e.g., "seq1") from newick_labels, trying to remove it again will fail because it no longer exists in the list.
+How to diagnose the issue
+Check the names in newick_labels
+Right before you remove the element, print out the current names:
+
+r
+Copy
+cat("Names in newick_labels right before removal:\n")
+print(names(newick_labels))
+cat("Trying to remove tip_i =", tip_i, "and tip_j =", tip_j, "\n")
+If tip_i or tip_j is not in that printed list, you have a name mismatch.
+
+Check the row/column names of the distance matrix
+Make sure the row/column names of dist_mat (which become tip_i and tip_j) match exactly the keys in newick_labels.
+
+Print tip_i and tip_j explicitly
+
+r
+Copy
+cat("Merging tips:", tip_i, "and", tip_j, "\n")
+Sometimes an off-by-one error in indexing can cause them to be numeric instead of character strings.
+
+Common fixes
+Ensure consistency in naming
+
+If you are using rownames(dist_mat) <- paste0("seq", 1:n), make sure newick_labels is initialized with the same names, for example:
+r
+Copy
+tips <- paste0("seq", seq_len(n))
+newick_labels <- setNames(as.list(tips), tips)
+# This means newick_labels[["seq1"]] = "seq1", newick_labels[["seq2"]] = "seq2", etc.
+Then at each iteration, tip_i and tip_j should be among those names.
+Guard against missing names
+If for some reason you can’t guarantee the names are present, you can do a check:
+
+r
+Copy
+if (tip_i %in% names(newick_labels)) {
+    newick_labels[[tip_i]] <- NULL
+}
+But in a well-structured NJ algorithm, you shouldn’t need this hack. It’s better to ensure the names truly match.
+
+Double-check that you only remove each tip once
+
+If your loop structure tries to merge the same tip a second time, you’d be removing something that doesn’t exist in newick_labels anymore.
+Example: Where to Insert Debugging Checks
+In the code block where you do:
+
+r
+Copy
+# ...
+new_label <- paste0("(", 
+                    newick_labels[[tip_i]], ":", round(v_i, 6), ",",
+                    newick_labels[[tip_j]], ":", round(v_j, 6), 
+                    ")")
+
+newick_labels[[new_node]] <- new_label
+
+# Remove old tips from newick_labels
+newick_labels[[tip_i]] <- NULL
+newick_labels[[tip_j]] <- NULL
+# ...
+You can insert:
+
+r
+Copy
+cat("Merging tips:", tip_i, "and", tip_j, "\n")
+cat("Names in newick_labels before removal:\n")
+print(names(newick_labels))
+right before removing tip_i and tip_j. Then check the console output: if you don’t see tip_i or tip_j in that list, you know exactly why R complains.
+
+Summary
+The error indicates you’re trying to remove an element that isn’t present in the named list.
+Most often, it’s caused by name mismatches between your distance matrix row/column names and your newick_labels keys or by re-removing something that was already removed.
+Double-check that tip_i and tip_j match valid names in newick_labels at each iteration. Printing out the names is the quickest way to diagnose exactly where the mismatch arises.

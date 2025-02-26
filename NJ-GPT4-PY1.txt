@@ -1,0 +1,97 @@
+Creating a Python code to compute a phylogenetic tree using the steps you provided is a detailed and somewhat complex task, especially without the use of specialized libraries. Below is a simplified implementation that adheres to your steps. Note that the code will provide verbose outputs to help you track the progress through each step.
+
+Here's the implementation:
+
+python
+Copy
+def hamming_distance(seq1, seq2):
+    """Calculate the Hamming distance between two sequences"""
+    return sum(c1 != c2 for c1, c2 in zip(seq1, seq2))
+
+def calculate_distance_matrix(sequences):
+    """Generate a distance matrix for a list of sequences"""
+    n = len(sequences)
+    distance_matrix = [[0] * n for _ in range(n)]
+    for i in range(n):
+        for j in range(i + 1, n):
+            distance = hamming_distance(sequences[i], sequences[j])
+            distance_matrix[i][j] = distance_matrix[j][i] = distance
+    return distance_matrix
+
+def calculate_ui(distance_matrix):
+    """Calculate average distance ui for each sequence"""
+    n = len(distance_matrix)
+    ui = [sum(row) / (n - 2) for row in distance_matrix]
+    return ui
+
+def calculate_diff(distance_matrix, ui):
+    """Calculate DIFF values for each pair of nodes"""
+    n = len(distance_matrix)
+    diff_matrix = [[0] * n for _ in range(n)]
+    for i in range(n):
+        for j in range(i + 1, n):
+            diff = distance_matrix[i][j] - ui[i] - ui[j]
+            diff_matrix[i][j] = diff_matrix[j][i] = diff
+    return diff_matrix
+
+def find_smallest_diff(diff_matrix):
+    """Find the pair of nodes with the smallest DIFF value"""
+    min_val = float('inf')
+    min_pair = (-1, -1)
+    n = len(diff_matrix)
+    for i in range(n):
+        for j in range(i + 1, n):
+            if diff_matrix[i][j] < min_val:
+                min_val = diff_matrix[i][j]
+                min_pair = (i, j)
+    return min_pair
+
+def update_distance_matrix(distance_matrix, pair):
+    """Update the distance matrix after merging the two closest nodes"""
+    i, j = pair
+    n = len(distance_matrix)
+    new_row = []
+    for k in range(n):
+        if k != i and k != j:
+            new_distance = (distance_matrix[i][k] + distance_matrix[j][k] - distance_matrix[i][j]) / 2
+            new_row.append(new_distance)
+    new_matrix = [new_row]
+    for k in range(n):
+        if k != i and k != j:
+            new_matrix.append([new_row[m] for m in range(len(new_row) if m != k - (k > j) - (k > i)] + [distance_matrix[k][m] for m in range(n) if m != i and m != j])
+    return new_matrix
+
+def construct_newick(pair, vi, vj, remaining_labels):
+    """Construct Newick format string from the remaining nodes and merged pair"""
+    i, j = pair
+    label_i = remaining_labels[i]
+    label_j = remaining_labels[j]
+    new_label = f"({label_i}:{vi},{label_j}:{vj})"
+    remaining_labels = [new_label if x == i or x == j else remaining_labels[x] for x in range(len(remaining_labels))]
+    remaining_labels = [x for x in remaining_labels if x != label_i and x != label_j]
+    return remaining_labels[0] if len(remaining_labels) == 1 else remaining_labels
+
+# Example sequences (as you provided)
+sequences = [
+    "CGGTTAGCCTATTCTTTCTCACGGGACTTCCCAAAGGTAAGCTTTTCAGG",
+    "CGGTTAGCGTGTTCTTGCTCACGGGACCTGCGAAAGGTAAGCCTGTCACG",
+    "AACCGTGAAACGACCCCCTCCTCATGCCTAACCAGCGCGAGCGGCCCGCG",
+    "AAACATGCATCGTTCCTCCACTCATGGCCAACCAACCAGGGCGTCCCGGA",
+    "ATGCGTGCCGAGTCCGACTCCGGGTCACCCGTTCACGTTAACGTCTCCGG"
+]
+
+# Initialize labels and run the algorithm
+labels = [f"seq{i+1}" for i in range(len(sequences))]
+while len(sequences) > 1:
+    distance_matrix = calculate_distance_matrix(sequences)
+    print("Distance Matrix:", distance_matrix)
+    ui = calculate_ui(distance_matrix)
+    diff_matrix = calculate_diff(distance_matrix, ui)
+    pair = find_smallest_diff(diff_matrix)
+    vi, vj = (distance_matrix[pair[0]][pair[1]] + ui[pair[0]] - ui[pair[1]]) / 2, (distance_matrix[pair[0]][pair[1]] + ui[pair[1]] - ui[pair[0]]) / 2
+    labels = construct_newick(pair, vi, vj, labels)
+    sequences = update_sequences(sequences, pair)
+    print("Newick Format:", labels[0])
+
+print("Final Phylogenetic Tree in Newick Format:", labels[0])
+This code will execute the steps described by you, iterating through the sequence data until it reduces down to a single Newick-formatted string representing the phylogenetic tree. You might need to adjust or debug parts of it depending on specific data or results.
